@@ -2,6 +2,8 @@
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Tests](https://img.shields.io/badge/tests-151%20passed-green)
 ![Coverage](https://img.shields.io/badge/coverage-95%25-green)
+[![PyPI version](https://badge.fury.io/py/ssl-checkup.svg)](https://badge.fury.io/py/ssl-checkup)
+[![Downloads](https://pepy.tech/badge/ssl-checkup)](https://pepy.tech/project/ssl-checkup)
 
 # ssl-checkup
 
@@ -15,21 +17,33 @@ A robust, modular Python CLI tool for inspecting SSL/TLS certificates of remote 
 - **Flexible Output**: Print PEM certificate, issuer, subject, or SANs only as needed
 - **Error Handling**: Graceful handling of DNS/socket errors with helpful messages
 - **Modular Architecture**: Clean, testable code structure with 95% test coverage
-- **Easy Installation**: Ready for global installation via `pipx`, `pip`, or `uv`
+- **Easy Installation**: Available on PyPI - install with `pipx install ssl-checkup`
 
 ## Installation
 
 ### For Users (Recommended)
 
-Install globally with pipx for best isolation:
+**Install with pipx for best isolation and to avoid dependency conflicts:**
 
 ```bash
-git clone https://github.com/BaDxKaRMa/ssl-checkup.git
-cd ssl-checkup
-pipx install .
+pipx install ssl-checkup
 ```
 
-Or install with pip:
+If you don't have pipx, install it first:
+
+```bash
+# On macOS with Homebrew
+brew install pipx
+
+# On Ubuntu/Debian
+sudo apt install pipx
+
+# Or with pip
+pip install --user pipx
+pipx ensurepath
+```
+
+**Alternative: Install with pip (may cause dependency conflicts):**
 
 ```bash
 pip install ssl-checkup
@@ -187,8 +201,15 @@ ssl-checkup --insecure your-internal-server.com
 # Ensure Python 3.11+
 python --version
 
-# Use pipx for isolated installation (recommended)
+# Install with pipx (recommended for CLI tools)
 pipx install ssl-checkup
+
+# If pipx isn't available, install it first
+pip install --user pipx
+pipx ensurepath
+
+# Alternative: Install with pip (may cause conflicts)
+pip install ssl-checkup
 
 # Or use uv for development
 uv sync && uv run ssl-checkup example.com

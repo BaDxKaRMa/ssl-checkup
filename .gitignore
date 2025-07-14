@@ -427,4 +427,7 @@ pip-selfcheck.json
 .history
 .ionide
 
+# pypi
+.pypirc
+
 # End of https://www.toptal.com/developers/gitignore/api/macos,virtualenv,visualstudiocode,vim,python,pycharm+all,dotenv,test

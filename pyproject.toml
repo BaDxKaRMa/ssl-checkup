@@ -12,11 +12,10 @@ requires-python = ">=3.11"
 authors = [
     { name = "BaDxKaRMa" }
 ]
-license = { text = "GPL-3.0" }
+license = "GPL-3.0"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
     "Intended Audience :: Developers",
     "Intended Audience :: Information Technology",
@@ -48,4 +47,5 @@ dev = [
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
     "responses>=0.23.0",
+    "twine>=6.1.0",
 ]
