@@ -40,8 +40,6 @@ ssl-checkup = "ssl_checkup.main:main"
 [dependency-groups]
 dev = [
     "build>=1.2.2.post1",
-]
-test = [
     "bandit>=1.8.6",
     "flake8>=7.3.0",
     "mypy>=1.17.0",

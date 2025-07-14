@@ -17,19 +17,21 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
       with:
-        python-version: ${{ matrix.python-version }}
+        version: "latest"
+
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[test]"
+        uv sync --group dev
 
     - name: Run tests
       run: |
-        python -m pytest tests/ -v --cov=ssl_checkup --cov-report=xml
+        uv run pytest tests/ -v --cov=ssl_checkup --cov-report=xml
 
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
@@ -44,41 +46,43 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
       with:
-        python-version: '3.11'
+        version: "latest"
+
+    - name: Set up Python
+      run: uv python install 3.11
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[test]"
-        pip install black flake8 mypy
+        uv sync --group dev
 
     - name: Run black
-      run: black --check --line-length 88 ssl_checkup/ tests/
+      run: uv run black --check --line-length 88 ssl_checkup/ tests/
 
     - name: Run flake8
-      run: flake8 --max-line-length=88 ssl_checkup/ tests/
+      run: uv run flake8 --max-line-length=88 ssl_checkup/ tests/
 
     - name: Run mypy
-      run: mypy ssl_checkup/ --ignore-missing-imports
+      run: uv run mypy ssl_checkup/ --ignore-missing-imports
 
   security:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
       with:
-        python-version: '3.11'
+        version: "latest"
+
+    - name: Set up Python
+      run: uv python install 3.11
 
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[test]"
-        pip install bandit
+        uv sync --group dev
 
     - name: Run bandit
-      run: bandit -r ssl_checkup/
+      run: uv run bandit -r ssl_checkup/
