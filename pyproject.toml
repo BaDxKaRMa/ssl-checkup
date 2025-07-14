@@ -3,14 +3,35 @@ requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
+
 name = "ssl-checkup"
-version = "0.1.0"
-description = "Add your description here"
+version = "1.0.0"
+description = "A robust, user-friendly Python CLI tool for inspecting SSL/TLS certificates of remote servers."
 readme = "README.md"
 requires-python = ">=3.11"
+authors = [
+    { name = "BaDxKaRMa" }
+]
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Environment :: Console",
+]
 dependencies = [
     "termcolor>=3.1.0",
 ]
 
 [project.scripts]
 ssl-checkup = "ssl_checkup:main"
+
+[dependency-groups]
+dev = [
+    "build>=1.2.2.post1",
+]

@@ -1,3 +1,7 @@
+
+![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)
+![License](https://img.shields.io/github/license/BaDxKaRMa/ssl-checkup)
+
 # ssl-checkup
 
 A robust, user-friendly Python CLI tool for inspecting SSL/TLS certificates of remote servers. Designed for easy installation, colorized output, and detailed debugging.
@@ -50,6 +54,7 @@ ssl-checkup [OPTIONS] WEBSITE[:PORT]
 
 - `WEBSITE` is the domain or IP to check (default port is 443, or specify with `:PORT`).
 
+
 ### Options
 
 - `--no-color` Disable color output
@@ -58,7 +63,9 @@ ssl-checkup [OPTIONS] WEBSITE[:PORT]
 - `-i`, `--issuer` Print only the issuer
 - `-s`, `--subject` Print only the subject
 - `-a`, `--san` Print only the Subject Alternative Names (SANs)
+- `--insecure`, `-k` Allow insecure server connections when using SSL (bypass certificate validation)
 - `--version` Show version and exit
+
 
 ### Examples
 
@@ -92,6 +99,35 @@ Enable debug output:
 ssl-checkup --debug example.com
 ```
 
+Bypass SSL certificate validation (insecure):
+
+```
+ssl-checkup --insecure expired.badssl.com
+```
+## Requirements
+
+- Python 3.11 or higher
+- [termcolor](https://pypi.org/project/termcolor/) (for color output; optional but recommended)
+
+
+## Updating
+
+If you installed `ssl-checkup` with pipx and want to update to the latest version after pulling new changes from git:
+
+1. Pull the latest changes:
+
+   ```sh
+   git pull
+   ```
+
+2. Reinstall the tool with pipx (replace `ssl-checkup` with your installed package name if different):
+
+   ```sh
+   pipx reinstall ssl-checkup
+   ```
+
+This will update your global CLI to the latest code from the repository.
+
 ## Troubleshooting
 
 If you see an error about `termcolor` not being installed, run:
@@ -102,4 +138,4 @@ pip install termcolor
 
 ---
 
-_Project maintained by Ralph Hittell. Contributions welcome!_
+_Project maintained by BaDxKaRMa. Contributions welcome!_
