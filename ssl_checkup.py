@@ -319,7 +319,10 @@ def main():
                         f"  Time to connect/fetch: {time.time() - start_time:.3f} seconds"
                     )
                 print(dheader("[DEBUG] Raw certificate dict:"))
-                pprint.pprint(cert_info.get("cert"))
+                raw_cert = cert_info.get("cert")
+                if not raw_cert and args.insecure:
+                    print("  (Empty when using --insecure - this is expected)")
+                pprint.pprint(raw_cert)
                 print(dheader("[DEBUG] PEM certificate:"))
                 print(cert_info.get("pem"))
             cert = cert_info.get("cert")
@@ -360,6 +363,8 @@ def main():
             for name in san:
                 print(name)
             return
+        # Store the cert that will be used for display
+        display_cert = cert
         pretty_print_cert(
             cert,
             hostname,
@@ -369,6 +374,18 @@ def main():
             cert_info.get("pem") if isinstance(cert_info, dict) else None,
             args.insecure,
         )
+
+        # Update display_cert if it was modified by pretty_print_cert due to PEM parsing
+        if (
+            not cert.get("notAfter")
+            and args.insecure
+            and isinstance(cert_info, dict)
+            and cert_info.get("pem")
+        ):
+            parsed_cert = parse_pem_cert(cert_info.get("pem"))
+            if parsed_cert:
+                display_cert = parsed_cert
+
         if debug:
 
             def dheader(text):
@@ -377,11 +394,13 @@ def main():
                 return text
 
             print("\n" + dheader("[DEBUG] Query:") + f" {hostname}")
-            subject_val = dict(x[0] for x in cert.get("subject", [])).get(
+
+            # Use the same cert data that was used for display (after PEM parsing if applicable)
+            subject_val = dict(x[0] for x in display_cert.get("subject", [])).get(
                 "commonName", None
             )
             print(dheader("[DEBUG] Subject:") + f" {subject_val}")
-            san = parse_san(cert)
+            san = parse_san(display_cert)
             print(dheader("[DEBUG] SANs:") + f" {san}")
             matches = [name for name in san if name.lower() == hostname.lower()]
             if subject_val and subject_val.lower() == hostname.lower():
