@@ -409,6 +409,9 @@ def main():
                 print(dheader(f"[DEBUG] Query matches SAN(s): {matches}"))
             else:
                 print(dheader("[DEBUG] Query does not match any SAN."))
+    except KeyboardInterrupt:
+        print("\nOperation cancelled by user.", file=sys.stderr)
+        sys.exit(130)  # Standard exit code for Ctrl+C
     except socket.gaierror as e:
         print(
             f"Could not resolve or connect to '{hostname}:{port}'. Please check the hostname and your network connection.",
