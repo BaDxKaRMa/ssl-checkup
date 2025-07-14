@@ -9,16 +9,16 @@ A robust, user-friendly Python CLI tool for inspecting SSL/TLS certificates of r
 - Debug mode for troubleshooting (`--debug`).
 - Prints PEM certificate, issuer, subject, or SANs only, if requested.
 - Handles DNS/socket errors gracefully.
-- Ready for installation as a global CLI tool via `pip` or `uv`.
+- Ready for installation as a global CLI tool via `pipx` or `uv`.
 
 ## Installation
 
 ### For Users (recommended)
 
-From the project directory, install globally with pip:
+From the project directory, install globally with pipx:
 
 ```
-pip install .
+pipx install .
 ```
 
 After installation, you can run `ssl-checkup` from anywhere:
