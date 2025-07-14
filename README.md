@@ -169,7 +169,41 @@ make check-all
 3. **Run tests** to ensure everything works: `make test`
 4. **Make your changes** with appropriate tests
 5. **Run quality checks**: `make check-all`
-6. **Submit a pull request**
+6. **Submit a pull request`
+
+### Releasing (Maintainers)
+
+This project uses automated PyPI publishing via GitHub Actions. To release a new version:
+
+**Option 1: Using Makefile (Recommended)**
+```bash
+# Create and push a new release in one command
+make release-push VERSION=1.1.0
+```
+
+**Option 2: Manual Process**
+```bash
+# 1. Update version in pyproject.toml
+version = "1.1.0"
+
+# 2. Commit and tag the release
+git add pyproject.toml
+git commit -m "Release v1.1.0"
+git tag v1.1.0
+
+# 3. Push to trigger automated PyPI upload
+git push && git push --tags
+```
+
+**What happens automatically:**
+- GitHub Actions builds the package with `uv`
+- Runs quality checks with `twine check`
+- Uploads to PyPI using stored API token
+- New version is available within minutes
+
+**Requirements for automated releases:**
+- PyPI API token stored in GitHub Secrets as `PYPI_API_TOKEN`
+- Version must follow semantic versioning (e.g., 1.0.0, 1.1.0, 2.0.0)
 
 ## Troubleshooting
 

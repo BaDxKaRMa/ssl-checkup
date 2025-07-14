@@ -79,3 +79,18 @@ example-debug:  ## Run debug example
 
 example-insecure:  ## Run insecure example
 	python -m ssl_checkup.main badssl.com --insecure
+
+release:  ## Create a new release (usage: make release VERSION=1.1.0)
+	@if [ -z "$(VERSION)" ]; then echo "Usage: make release VERSION=1.1.0"; exit 1; fi
+	@echo "Creating release $(VERSION)..."
+	@sed -i '' 's/version = "[^"]*"/version = "$(VERSION)"/' pyproject.toml
+	@git add pyproject.toml
+	@git commit -m "Release v$(VERSION)"
+	@git tag v$(VERSION)
+	@echo "Release created! Push with: git push && git push --tags"
+
+release-push:  ## Create and push a new release (usage: make release-push VERSION=1.1.0)
+	@if [ -z "$(VERSION)" ]; then echo "Usage: make release-push VERSION=1.1.0"; exit 1; fi
+	@$(MAKE) release VERSION=$(VERSION)
+	@git push && git push --tags
+	@echo "Release v$(VERSION) pushed! GitHub Actions will handle PyPI upload."
