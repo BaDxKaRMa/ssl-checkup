@@ -9,6 +9,16 @@ from datetime import datetime, timedelta
 __version__ = "1.0.0"
 
 try:
+    from cryptography import x509
+    from cryptography.hazmat.backends import default_backend
+
+    CRYPTOGRAPHY_AVAILABLE = True
+except ImportError:
+    CRYPTOGRAPHY_AVAILABLE = False
+    x509 = None
+    default_backend = None
+
+try:
     from termcolor import colored
 except ImportError:
 
@@ -59,12 +69,85 @@ def parse_san(cert):
     return san
 
 
-def pretty_print_cert(cert, hostname, port, days_to_warn, color_output):
+def parse_pem_cert(pem_cert):
+    """Parse certificate details from PEM when standard parsing fails (e.g., with --insecure)."""
+    if not CRYPTOGRAPHY_AVAILABLE or not pem_cert or not x509:
+        return None
+
+    try:
+        cert = x509.load_pem_x509_certificate(pem_cert.encode(), default_backend())
+
+        # Extract basic info
+        subject_attrs = {}
+        for attr in cert.subject:
+            subject_attrs[attr.oid._name] = attr.value
+
+        issuer_attrs = {}
+        for attr in cert.issuer:
+            issuer_attrs[attr.oid._name] = attr.value
+
+        # Extract SANs
+        san_list = []
+        try:
+            from cryptography.x509.oid import ExtensionOID
+
+            san_ext = cert.extensions.get_extension_for_oid(
+                ExtensionOID.SUBJECT_ALTERNATIVE_NAME
+            )
+            # Get DNS names from SAN extension
+            dns_names = san_ext.value.get_values_for_type(x509.DNSName)
+            san_list.extend(dns_names)
+        except (x509.ExtensionNotFound, AttributeError, ImportError):
+            pass
+        except Exception:
+            pass
+
+        # Convert to format compatible with pretty_print_cert
+        return {
+            "notAfter": cert.not_valid_after_utc.strftime("%b %d %H:%M:%S %Y GMT"),
+            "notBefore": cert.not_valid_before_utc.strftime("%b %d %H:%M:%S %Y GMT"),
+            "subject": [[(k, v)] for k, v in subject_attrs.items()],
+            "issuer": [[(k, v)] for k, v in issuer_attrs.items()],
+            "subjectAltName": [("DNS", name) for name in san_list],
+        }
+    except Exception:
+        return None
+
+
+def pretty_print_cert(
+    cert, hostname, port, days_to_warn, color_output, pem_cert=None, insecure=False
+):
     not_after = cert.get("notAfter")
     not_before = cert.get("notBefore")
     issuer = dict(x[0] for x in cert.get("issuer", []))
     subject = dict(x[0] for x in cert.get("subject", []))
     san = parse_san(cert)
+
+    # If cert is empty (due to --insecure) and we have PEM, try to parse it
+    if not_after is None and insecure and pem_cert:
+        parsed_cert = parse_pem_cert(pem_cert)
+        if parsed_cert:
+            cert = parsed_cert
+            not_after = cert.get("notAfter")
+            not_before = cert.get("notBefore")
+            issuer = dict(x[0] for x in cert.get("issuer", []))
+            subject = dict(x[0] for x in cert.get("subject", []))
+            san = parse_san(cert)
+
+    if not_after is None:
+        if insecure and not CRYPTOGRAPHY_AVAILABLE:
+            print(
+                "Warning: Certificate details are limited when using --insecure/-k. Install 'cryptography' for full details:",
+                file=sys.stderr,
+            )
+            print("  pip install cryptography", file=sys.stderr)
+        else:
+            print(
+                "Error: Could not retrieve certificate expiration date (notAfter is missing). This can happen when using --insecure/-k on some servers.",
+                file=sys.stderr,
+            )
+        print("Raw certificate:", cert, file=sys.stderr)
+        return
 
     # Parse expiration
     expire_date = datetime.strptime(not_after, "%b %d %H:%M:%S %Y %Z")
@@ -277,7 +360,15 @@ def main():
             for name in san:
                 print(name)
             return
-        pretty_print_cert(cert, hostname, port, 30, color_output)
+        pretty_print_cert(
+            cert,
+            hostname,
+            port,
+            30,
+            color_output,
+            cert_info.get("pem") if isinstance(cert_info, dict) else None,
+            args.insecure,
+        )
         if debug:
 
             def dheader(text):
@@ -311,6 +402,34 @@ def main():
             print(e, file=sys.stderr)
             traceback.print_exc()
         sys.exit(2)
+    except ssl.SSLError as e:
+        error_msg = str(e)
+        if "CERTIFICATE_VERIFY_FAILED" in error_msg:
+            print(
+                f"{colored('SSL Certificate verification failed:', 'red')} {e}",
+                file=sys.stderr,
+            )
+            print(
+                "If you want to bypass certificate validation, use the "
+                + colored("--insecure", "yellow")
+                + " or "
+                + colored("-k", "yellow")
+                + " flag:",
+                file=sys.stderr,
+            )
+            print(
+                f"  ssl-checkup {hostname}:{port} " + colored("--insecure", "yellow"),
+                file=sys.stderr,
+            )
+        else:
+            print(f"{colored('SSL Error:', 'red')} {e}", file=sys.stderr)
+        if "debug" in locals() and debug:
+            import traceback
+
+            print("\n[DEBUG] SSL Exception:", file=sys.stderr)
+            print(e, file=sys.stderr)
+            traceback.print_exc()
+        sys.exit(1)
     except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         if "debug" in locals() and debug:

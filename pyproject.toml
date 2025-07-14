@@ -25,7 +25,13 @@ classifiers = [
     "Environment :: Console",
 ]
 dependencies = [
+    "cryptography>=45.0.5",
     "termcolor>=3.1.0",
+]
+
+[project.optional-dependencies]
+full = [
+    "cryptography>=3.0.0",
 ]
 
 [project.scripts]
