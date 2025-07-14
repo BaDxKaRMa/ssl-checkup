@@ -1,5 +1,5 @@
 ![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)
-![License](https://img.shields.io/github/license/BaDxKaRMa/ssl-checkup)
+![License](https://img.shields.io/badge/license-GPL--3.0-blue)
 ![Tests](https://img.shields.io/badge/tests-151%20passed-green)
 ![Coverage](https://img.shields.io/badge/coverage-95%25-green)
 
