@@ -1,4 +1,3 @@
-
 ![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/github/license/BaDxKaRMa/ssl-checkup)
 ![Tests](https://img.shields.io/badge/tests-151%20passed-green)
@@ -23,16 +22,21 @@ A robust, modular Python CLI tool for inspecting SSL/TLS certificates of remote 
 ### For Users (Recommended)
 
 Install globally with pipx for best isolation:
+
 ```bash
-pipx install ssl-checkup
+git clone https://github.com/BaDxKaRMa/ssl-checkup.git
+cd ssl-checkup
+pipx install .
 ```
 
 Or install with pip:
+
 ```bash
 pip install ssl-checkup
 ```
 
 After installation, run from anywhere:
+
 ```bash
 ssl-checkup example.com
 ```
@@ -40,6 +44,7 @@ ssl-checkup example.com
 ### For Development
 
 Clone and set up development environment:
+
 ```bash
 git clone https://github.com/BaDxKaRMa/ssl-checkup.git
 cd ssl-checkup
@@ -60,61 +65,68 @@ ssl-checkup [OPTIONS] WEBSITE[:PORT]
 ```
 
 **Arguments:**
+
 - `WEBSITE` - Domain or IP address to check (default port: 443)
 - `PORT` - Optional custom port (e.g., `example.com:8443`)
 
 ### Options
 
-| Option | Description |
-|--------|-------------|
-| `--no-color` | Disable color output for plain text |
-| `-p`, `--print-cert` | Print the PEM certificate to stdout |
-| `--debug` | Enable debug output for troubleshooting |
-| `-i`, `--issuer` | Print only the certificate issuer |
-| `-s`, `--subject` | Print only the certificate subject |
-| `-a`, `--san` | Print only the Subject Alternative Names (SANs) |
-| `--insecure`, `-k` | Allow insecure connections (bypass certificate validation) |
-| `--version` | Show version and exit |
-| `-h`, `--help` | Show help message |
+| Option               | Description                                                |
+| -------------------- | ---------------------------------------------------------- |
+| `--no-color`         | Disable color output for plain text                        |
+| `-p`, `--print-cert` | Print the PEM certificate to stdout                        |
+| `--debug`            | Enable debug output for troubleshooting                    |
+| `-i`, `--issuer`     | Print only the certificate issuer                          |
+| `-s`, `--subject`    | Print only the certificate subject                         |
+| `-a`, `--san`        | Print only the Subject Alternative Names (SANs)            |
+| `--insecure`, `-k`   | Allow insecure connections (bypass certificate validation) |
+| `--version`          | Show version and exit                                      |
+| `-h`, `--help`       | Show help message                                          |
 
 ### Examples
 
 **Basic certificate check:**
+
 ```bash
 ssl-checkup example.com
 ```
 
 **Check custom port:**
+
 ```bash
 ssl-checkup example.com:8443
 ```
 
 **Print specific certificate fields:**
+
 ```bash
 ssl-checkup -i example.com          # Issuer only
-ssl-checkup -s example.com          # Subject only  
+ssl-checkup -s example.com          # Subject only
 ssl-checkup -a example.com          # SANs only
 ```
 
 **Debug and troubleshooting:**
+
 ```bash
 ssl-checkup --debug example.com     # Detailed debug output
 ssl-checkup --insecure expired.badssl.com  # Skip validation
 ```
 
 **Export certificate:**
+
 ```bash
 ssl-checkup -p example.com > cert.pem       # Save PEM certificate
 ssl-checkup --no-color example.com > info.txt  # Plain text output
 ```
+
 ## Requirements
 
 - **Python**: 3.11 or higher
-- **Optional Dependencies**: 
+- **Optional Dependencies**:
   - `termcolor>=3.1.0` (enhanced colorized output)
   - `cryptography>=45.0.5` (advanced certificate parsing)
 
-*Note: The tool works without optional dependencies, with graceful fallbacks for missing features.*
+_Note: The tool works without optional dependencies, with graceful fallbacks for missing features._
 
 ## Development
 
@@ -150,6 +162,7 @@ make check-all
 ### Common Issues
 
 **Missing dependencies:**
+
 ```bash
 # For development - sync all dependencies
 uv sync
@@ -159,6 +172,7 @@ uv pip install termcolor cryptography
 ```
 
 **Connection issues:**
+
 ```bash
 # Use debug mode for detailed troubleshooting
 ssl-checkup --debug example.com
@@ -168,6 +182,7 @@ ssl-checkup --insecure your-internal-server.com
 ```
 
 **Installation issues:**
+
 ```bash
 # Ensure Python 3.11+
 python --version
