@@ -24,8 +24,11 @@ except ImportError:
     )
 
 
-def get_certificate(hostname, port, pem=False):
-    context = ssl.create_default_context()
+def get_certificate(hostname, port, pem=False, insecure=False):
+    if insecure:
+        context = ssl._create_unverified_context()
+    else:
+        context = ssl.create_default_context()
     with socket.create_connection((hostname, port), timeout=10) as sock:
         resolved_ip = sock.getpeername()[0]
         with context.wrap_socket(sock, server_hostname=hostname) as ssock:
@@ -143,6 +146,12 @@ def main():
         help="Website to check (e.g. example.com or example.com:443)",
     )
     parser.add_argument(
+        "--insecure",
+        "-k",
+        action="store_true",
+        help="Allow insecure server connections when using SSL (bypass certificate validation)",
+    )
+    parser.add_argument(
         "--version",
         action="store_true",
         help="Show version and exit",
@@ -198,10 +207,10 @@ def main():
         debug = args.debug
         start_time = time.time() if debug else None
         if args.print_cert:
-            pem = get_certificate(hostname, port, pem=True)
+            pem = get_certificate(hostname, port, pem=True, insecure=args.insecure)
             print(pem)
             return
-        cert_info = get_certificate(hostname, port)
+        cert_info = get_certificate(hostname, port, insecure=args.insecure)
         # If get_certificate returns just the PEM (for --print-cert), cert_info is a string
         if isinstance(cert_info, dict):
             if debug:
