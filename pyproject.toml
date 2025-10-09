@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 
 name = "ssl-checkup"
-version = "1.0.1"
+version = "1.0.2"
 description = "A robust, user-friendly Python CLI tool for inspecting SSL/TLS certificates of remote servers."
 readme = "README.md"
 requires-python = ">=3.11"
