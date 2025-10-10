@@ -60,7 +60,13 @@ class TestCliIntegration:
     def test_print_cert_flag(self):
         """Test print certificate flag."""
         result = subprocess.run(
-            [sys.executable, "-m", "ssl_checkup.main", "hsts.badssl.com", "--print-cert"],
+            [
+                sys.executable,
+                "-m",
+                "ssl_checkup.main",
+                "hsts.badssl.com",
+                "--print-cert",
+            ],
             capture_output=True,
             text=True,
         )
@@ -153,7 +159,13 @@ class TestCliIntegration:
     def test_insecure_flag(self):
         """Test insecure flag with self-signed certificate."""
         result = subprocess.run(
-            [sys.executable, "-m", "ssl_checkup.main", "self-signed.badssl.com", "--insecure"],
+            [
+                sys.executable,
+                "-m",
+                "ssl_checkup.main",
+                "self-signed.badssl.com",
+                "--insecure",
+            ],
             capture_output=True,
             text=True,
         )
