@@ -3,7 +3,6 @@
 import re
 import subprocess
 import sys
-from unittest.mock import patch
 
 import pytest
 
@@ -45,41 +44,23 @@ class TestCliIntegration:
         assert "usage:" in result.stderr or "usage:" in result.stdout
 
     @pytest.mark.integration
-    @patch("ssl_checkup.connection.get_certificate")
-    def test_basic_certificate_check(self, mock_get_cert):
+    def test_basic_certificate_check(self):
         """Test basic certificate checking functionality."""
-        # Mock certificate data
-        mock_cert = {
-            "notAfter": "Dec 15 23:59:59 2024 GMT",
-            "notBefore": "Sep 15 00:00:00 2024 GMT",
-            "subject": [[("commonName", "example.com")]],
-            "issuer": [[("organizationName", "Example CA")]],
-            "subjectAltName": [("DNS", "example.com")],
-        }
-
-        mock_get_cert.return_value = {"cert": mock_cert}
-
         result = subprocess.run(
-            [sys.executable, "-m", "ssl_checkup.main", "example.com"],
+            [sys.executable, "-m", "ssl_checkup.main", "hsts.badssl.com"],
             capture_output=True,
             text=True,
         )
 
         assert result.returncode == 0
         assert "Certificate for:" in result.stdout
-        assert "example.com" in result.stdout
+        assert "badssl.com" in result.stdout
 
     @pytest.mark.integration
-    @patch("ssl_checkup.connection.get_certificate")
-    def test_print_cert_flag(self, mock_get_cert):
+    def test_print_cert_flag(self):
         """Test print certificate flag."""
-        mock_pem = (
-            "-----BEGIN CERTIFICATE-----\nMOCK_CERT_DATA\n-----END CERTIFICATE-----"
-        )
-        mock_get_cert.return_value = mock_pem
-
         result = subprocess.run(
-            [sys.executable, "-m", "ssl_checkup.main", "example.com", "--print-cert"],
+            [sys.executable, "-m", "ssl_checkup.main", "hsts.badssl.com", "--print-cert"],
             capture_output=True,
             text=True,
         )
@@ -92,7 +73,7 @@ class TestCliIntegration:
     def test_issuer_flag(self):
         """Test issuer flag."""
         result = subprocess.run(
-            [sys.executable, "-m", "ssl_checkup.main", "example.com", "--issuer"],
+            [sys.executable, "-m", "ssl_checkup.main", "hsts.badssl.com", "--issuer"],
             capture_output=True,
             text=True,
         )
@@ -102,34 +83,29 @@ class TestCliIntegration:
         assert len(result.stdout.strip()) > 0
 
     @pytest.mark.integration
-    @patch("ssl_checkup.connection.get_certificate")
-    def test_subject_flag(self, mock_get_cert):
+    def test_subject_flag(self):
         """Test subject flag."""
-        mock_cert = {"subject": [[("commonName", "example.com")]]}
-
-        mock_get_cert.return_value = {"cert": mock_cert}
-
         result = subprocess.run(
-            [sys.executable, "-m", "ssl_checkup.main", "example.com", "--subject"],
+            [sys.executable, "-m", "ssl_checkup.main", "hsts.badssl.com", "--subject"],
             capture_output=True,
             text=True,
         )
 
         assert result.returncode == 0
-        assert "example.com" in result.stdout
+        assert "badssl.com" in result.stdout
 
     @pytest.mark.integration
     def test_san_flag(self):
         """Test SAN flag."""
         result = subprocess.run(
-            [sys.executable, "-m", "ssl_checkup.main", "example.com", "--san"],
+            [sys.executable, "-m", "ssl_checkup.main", "hsts.badssl.com", "--san"],
             capture_output=True,
             text=True,
         )
 
         assert result.returncode == 0
         # Check that some SAN information is present (real certificate may change)
-        assert "example.com" in result.stdout
+        assert "badssl.com" in result.stdout
         assert len(result.stdout.strip()) > 0
 
     @pytest.mark.integration
@@ -150,21 +126,10 @@ class TestCliIntegration:
         assert "Could not resolve" in result.stderr
 
     @pytest.mark.integration
-    @patch("ssl_checkup.connection.get_certificate")
-    def test_no_color_flag(self, mock_get_cert):
+    def test_no_color_flag(self):
         """Test no-color flag."""
-        mock_cert = {
-            "notAfter": "Dec 15 23:59:59 2024 GMT",
-            "notBefore": "Sep 15 00:00:00 2024 GMT",
-            "subject": [[("commonName", "example.com")]],
-            "issuer": [[("organizationName", "Example CA")]],
-            "subjectAltName": [("DNS", "example.com")],
-        }
-
-        mock_get_cert.return_value = {"cert": mock_cert}
-
         result = subprocess.run(
-            [sys.executable, "-m", "ssl_checkup.main", "example.com", "--no-color"],
+            [sys.executable, "-m", "ssl_checkup.main", "hsts.badssl.com", "--no-color"],
             capture_output=True,
             text=True,
         )
@@ -173,27 +138,10 @@ class TestCliIntegration:
         assert "Certificate for:" in result.stdout
 
     @pytest.mark.integration
-    @patch("ssl_checkup.connection.get_certificate")
-    def test_debug_flag(self, mock_get_cert):
+    def test_debug_flag(self):
         """Test debug flag."""
-        mock_cert_info = {
-            "cert": {
-                "notAfter": "Dec 15 23:59:59 2024 GMT",
-                "notBefore": "Sep 15 00:00:00 2024 GMT",
-                "subject": [[("commonName", "example.com")]],
-                "issuer": [[("organizationName", "Example CA")]],
-                "subjectAltName": [("DNS", "example.com")],
-            },
-            "pem": "-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----",
-            "resolved_ip": "93.184.216.34",
-            "tls_version": "TLSv1.3",
-            "cipher": ("TLS_AES_256_GCM_SHA384", "TLSv1.3", 256),
-        }
-
-        mock_get_cert.return_value = mock_cert_info
-
         result = subprocess.run(
-            [sys.executable, "-m", "ssl_checkup.main", "example.com", "--debug"],
+            [sys.executable, "-m", "ssl_checkup.main", "hsts.badssl.com", "--debug"],
             capture_output=True,
             text=True,
         )
@@ -202,21 +150,10 @@ class TestCliIntegration:
         assert "[DEBUG]" in result.stdout
 
     @pytest.mark.integration
-    @patch("ssl_checkup.connection.get_certificate")
-    def test_insecure_flag(self, mock_get_cert):
-        """Test insecure flag."""
-        mock_cert = {
-            "notAfter": "Dec 15 23:59:59 2024 GMT",
-            "notBefore": "Sep 15 00:00:00 2024 GMT",
-            "subject": [[("commonName", "example.com")]],
-            "issuer": [[("organizationName", "Example CA")]],
-            "subjectAltName": [("DNS", "example.com")],
-        }
-
-        mock_get_cert.return_value = {"cert": mock_cert}
-
+    def test_insecure_flag(self):
+        """Test insecure flag with self-signed certificate."""
         result = subprocess.run(
-            [sys.executable, "-m", "ssl_checkup.main", "example.com", "--insecure"],
+            [sys.executable, "-m", "ssl_checkup.main", "self-signed.badssl.com", "--insecure"],
             capture_output=True,
             text=True,
         )
