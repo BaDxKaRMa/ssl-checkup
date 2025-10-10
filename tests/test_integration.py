@@ -1,5 +1,6 @@
 """Integration tests for ssl-checkup package."""
 
+import re
 import subprocess
 import sys
 from unittest.mock import patch
@@ -253,7 +254,13 @@ class TestPackageIntegration:
 
         assert hasattr(ssl_checkup, "main")
         assert hasattr(ssl_checkup, "__version__")
-        assert ssl_checkup.__version__ == "1.0.0"
+        # Version should exist, be a string, and match semantic versioning pattern
+        assert isinstance(ssl_checkup.__version__, str)
+        version_pattern = r"^\d+\.\d+\.\d+$"
+        assert re.match(version_pattern, ssl_checkup.__version__), (
+            f"Version '{ssl_checkup.__version__}' does not match "
+            f"semantic versioning pattern (e.g., '1.0.0')"
+        )
 
     def test_module_execution(self):
         """Test that the module can be executed with -m flag."""
