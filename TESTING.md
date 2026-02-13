@@ -4,21 +4,21 @@ This document describes the comprehensive testing setup for the SSL-Checkup pack
 
 ## Test Overview
 
-The project maintains **151 tests** with **95% code coverage**, ensuring reliability and maintainability.
+The project maintains **167 tests** with **95% code coverage**, ensuring reliability and maintainability.
 
 ### Test Structure
 
 ```
 tests/
 ├── conftest.py              # Pytest fixtures and configuration
-├── test_cli.py              # CLI argument parsing (20 tests)
-├── test_connection.py       # SSL connection functionality (9 tests)
-├── test_parser.py           # Certificate parsing logic (23 tests)
+├── test_cli.py              # CLI argument parsing (27 tests)
+├── test_connection.py       # SSL connection functionality (12 tests)
+├── test_parser.py           # Certificate parsing logic (25 tests)
 ├── test_display.py          # Output formatting (13 tests)
-├── test_formatting.py       # Text formatting utilities (26 tests)
-├── test_exceptions.py       # Error handling (15 tests)
-├── test_main.py             # Main application flow (25 tests)
-└── test_integration.py      # End-to-end CLI testing (20 tests)
+├── test_formatting.py       # Text formatting utilities (34 tests)
+├── test_exceptions.py       # Error handling (7 tests)
+├── test_main.py             # Main application flow (21 tests)
+└── test_integration.py      # End-to-end CLI testing (28 tests)
 ```
 
 ## Quick Start
@@ -75,20 +75,20 @@ pytest -m "not integration"
 pytest -m integration
 ```
 
-### Multi-Environment Testing
+### Quality and Environment Testing
 
 ```bash
-# Test across multiple Python versions
-tox
+# Run all local CI checks
+make ci
 
-# Test specific environment
-tox -e py311
+# Lint only
+make lint
 
-# Run linting
-tox -e lint
+# Security checks only
+make security
 
-# Run security checks
-tox -e security
+# Run tests with a specific interpreter (if installed)
+uv run --python 3.11 pytest -v
 ```
 
 ## Test Features

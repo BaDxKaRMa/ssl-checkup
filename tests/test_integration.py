@@ -524,7 +524,7 @@ class TestCliInProcessIntegration:
             with pytest.raises(SystemExit) as exc:
                 main()
 
-        assert exc.value.code == 12
+        assert exc.value.code == 10
         assert mock_get_cert.call_count == 2
 
     @patch("ssl_checkup.main.get_certificate")
@@ -557,6 +557,27 @@ class TestCliInProcessIntegration:
         payload = json.loads(output_file.read_text(encoding="utf-8"))
         assert payload["hostname"] == "example.com"
         assert payload["status"] == "valid"
+
+    @patch("ssl_checkup.main.get_certificate")
+    @patch("sys.stderr", new_callable=StringIO)
+    def test_output_file_error_keeps_stderr(self, mock_stderr, mock_get_cert, tmp_path):
+        """Smoke test: errors still go to stderr when --output redirects stdout."""
+        mock_get_cert.side_effect = socket.timeout("timed out")
+        output_file = tmp_path / "report.txt"
+
+        with patch.object(
+            sys,
+            "argv",
+            ["ssl-checkup", "example.com", "--output", str(output_file)],
+        ):
+            with pytest.raises(SystemExit) as exc:
+                main()
+
+        assert exc.value.code == 10
+        assert (
+            "Error for example.com: general_error - timed out" in mock_stderr.getvalue()
+        )
+        assert output_file.read_text(encoding="utf-8") == ""
 
 
 class TestPackageIntegration:

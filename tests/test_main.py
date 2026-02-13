@@ -377,8 +377,12 @@ class TestMain:
 
         # Verify error handling
         error_output = mock_stderr.getvalue()
-        assert "Error: Could not parse certificate details." in error_output
-        mock_exit.assert_called_with(1)
+        expected = (
+            "Error for example.com: general_error - "
+            "Could not parse certificate details."
+        )
+        assert expected in error_output
+        mock_exit.assert_called_with(10)
 
     @patch("ssl_checkup.main.create_parser")
     @patch("ssl_checkup.main.handle_version_check")
@@ -386,8 +390,10 @@ class TestMain:
     @patch("ssl_checkup.main.parse_website_arg")
     @patch("ssl_checkup.main.get_certificate")
     @patch("ssl_checkup.main.handle_keyboard_interrupt")
+    @patch("sys.exit")
     def test_main_keyboard_interrupt(
         self,
+        mock_exit,
         mock_handle_interrupt,
         mock_get_cert,
         mock_parse_website,
@@ -414,21 +420,24 @@ class TestMain:
 
         # Trigger KeyboardInterrupt during certificate retrieval (inside try-catch)
         mock_get_cert.side_effect = KeyboardInterrupt()
+        mock_handle_interrupt.return_value = 130
 
-        # The KeyboardInterrupt should be caught by main() and handled
         main()
 
         mock_handle_interrupt.assert_called_once()
+        mock_exit.assert_called_once_with(130)
 
     @patch("ssl_checkup.main.create_parser")
     @patch("ssl_checkup.main.handle_version_check")
     @patch("ssl_checkup.main.validate_args")
     @patch("ssl_checkup.main.parse_website_arg")
     @patch("ssl_checkup.main.get_certificate")
-    @patch("ssl_checkup.main.handle_socket_error")
+    @patch("sys.exit")
+    @patch("sys.stderr", new_callable=StringIO)
     def test_main_socket_error(
         self,
-        mock_handle_error,
+        mock_stderr,
+        mock_exit,
         mock_get_cert,
         mock_parse_website,
         mock_validate,
@@ -453,17 +462,23 @@ class TestMain:
 
         main()
 
-        mock_handle_error.assert_called_once_with(error, "example.com", 443, False)
+        assert (
+            "Error for example.com: socket_error - Name or service not known"
+            in mock_stderr.getvalue()
+        )
+        mock_exit.assert_called_once_with(10)
 
     @patch("ssl_checkup.main.create_parser")
     @patch("ssl_checkup.main.handle_version_check")
     @patch("ssl_checkup.main.validate_args")
     @patch("ssl_checkup.main.parse_website_arg")
     @patch("ssl_checkup.main.get_certificate")
-    @patch("ssl_checkup.main.handle_ssl_error")
+    @patch("sys.exit")
+    @patch("sys.stderr", new_callable=StringIO)
     def test_main_ssl_error(
         self,
-        mock_handle_error,
+        mock_stderr,
+        mock_exit,
         mock_get_cert,
         mock_parse_website,
         mock_validate,
@@ -488,17 +503,23 @@ class TestMain:
 
         main()
 
-        mock_handle_error.assert_called_once_with(error, "example.com", 443, False)
+        assert (
+            "Error for example.com: ssl_error - ('SSL handshake failed',)"
+            in mock_stderr.getvalue()
+        )
+        mock_exit.assert_called_once_with(10)
 
     @patch("ssl_checkup.main.create_parser")
     @patch("ssl_checkup.main.handle_version_check")
     @patch("ssl_checkup.main.validate_args")
     @patch("ssl_checkup.main.parse_website_arg")
     @patch("ssl_checkup.main.get_certificate")
-    @patch("ssl_checkup.main.handle_general_error")
+    @patch("sys.exit")
+    @patch("sys.stderr", new_callable=StringIO)
     def test_main_general_error(
         self,
-        mock_handle_error,
+        mock_stderr,
+        mock_exit,
         mock_get_cert,
         mock_parse_website,
         mock_validate,
@@ -521,7 +542,11 @@ class TestMain:
 
         main()
 
-        mock_handle_error.assert_called_once_with(error, False)
+        assert (
+            "Error for example.com: general_error - Something went wrong"
+            in mock_stderr.getvalue()
+        )
+        mock_exit.assert_called_once_with(10)
 
     @patch("ssl_checkup.main.create_parser")
     @patch("ssl_checkup.main.handle_version_check")

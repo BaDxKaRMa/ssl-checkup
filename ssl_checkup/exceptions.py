@@ -28,15 +28,15 @@ EXIT_SSL_ERROR = 11
 EXIT_GENERAL_ERROR = 12
 
 
-def handle_keyboard_interrupt() -> None:
+def handle_keyboard_interrupt() -> int:
     """Handle Ctrl+C interruption."""
     print("\nOperation cancelled by user.", file=sys.stderr)
-    sys.exit(130)  # Standard exit code for Ctrl+C
+    return 130  # Standard exit code for Ctrl+C
 
 
 def handle_socket_error(
     e: socket.gaierror, hostname: str, port: int, debug: bool = False
-) -> None:
+) -> int:
     """Handle socket connection errors."""
     print(
         f"Could not resolve or connect to '{hostname}:{port}'. "
@@ -47,12 +47,12 @@ def handle_socket_error(
         print("\n[DEBUG] socket.gaierror:", file=sys.stderr)
         print(e, file=sys.stderr)
         traceback.print_exc()
-    sys.exit(EXIT_OPERATIONAL_ERROR)
+    return EXIT_OPERATIONAL_ERROR
 
 
 def handle_ssl_error(
     e: ssl.SSLError, hostname: str, port: int, debug: bool = False
-) -> None:
+) -> int:
     """Handle SSL connection errors."""
     error_msg = str(e)
     if "CERTIFICATE_VERIFY_FAILED" in error_msg:
@@ -79,14 +79,14 @@ def handle_ssl_error(
         print("\n[DEBUG] SSL Exception:", file=sys.stderr)
         print(e, file=sys.stderr)
         traceback.print_exc()
-    sys.exit(EXIT_SSL_ERROR)
+    return EXIT_SSL_ERROR
 
 
-def handle_general_error(e: Exception, debug: bool = False) -> None:
+def handle_general_error(e: Exception, debug: bool = False) -> int:
     """Handle general exceptions."""
     print(f"Error: {e}", file=sys.stderr)
     if debug:
         print("\n[DEBUG] Exception:", file=sys.stderr)
         print(e, file=sys.stderr)
         traceback.print_exc()
-    sys.exit(EXIT_GENERAL_ERROR)
+    return EXIT_GENERAL_ERROR

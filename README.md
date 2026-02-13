@@ -1,6 +1,6 @@
 ![Python Version](https://img.shields.io/badge/python-3.11%2B-blue)
 ![License](https://img.shields.io/badge/license-GPL--3.0-blue)
-![Tests](https://img.shields.io/badge/tests-151%20passed-green)
+![Tests](https://img.shields.io/badge/tests-167%20passed-green)
 ![Coverage](https://img.shields.io/badge/coverage-95%25-green)
 [![PyPI version](https://badge.fury.io/py/ssl-checkup.svg)](https://badge.fury.io/py/ssl-checkup)
 [![Downloads](https://pepy.tech/badge/ssl-checkup)](https://pepy.tech/project/ssl-checkup)
@@ -216,6 +216,8 @@ cat targets.txt | ssl-checkup --input - --json --workers 4
 _Note: The tool works without optional dependencies, with graceful fallbacks for missing features._
 
 ## Development
+
+Architecture details: see [`ARCHITECTURE.md`](ARCHITECTURE.md).
 
 ### Quick Start
 
