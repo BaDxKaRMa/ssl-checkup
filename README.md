@@ -47,6 +47,8 @@ pipx ensurepath
 
 ```bash
 pip install ssl-checkup
+# Optional enhanced parsing and colors
+pip install "ssl-checkup[full]"
 ```
 
 After installation, run from anywhere:
@@ -68,7 +70,7 @@ uv sync
 uv run ssl-checkup example.com
 
 # Or using pip
-pip install -e ".[dev,test]"
+pip install -e ".[dev,test,full]"
 python -m ssl_checkup.main example.com
 ```
 
@@ -136,7 +138,7 @@ ssl-checkup --no-color example.com > info.txt  # Plain text output
 ## Requirements
 
 - **Python**: 3.11 or higher
-- **Optional Dependencies**:
+- **Optional Dependencies** (install with `pip install "ssl-checkup[full]"`):
   - `termcolor>=3.1.0` (enhanced colorized output)
   - `cryptography>=45.0.5` (advanced certificate parsing)
 
@@ -169,7 +171,7 @@ make check-all
 3. **Run tests** to ensure everything works: `make test`
 4. **Make your changes** with appropriate tests
 5. **Run quality checks**: `make check-all`
-6. **Submit a pull request`
+6. **Submit a pull request**
 
 ### Releasing (Maintainers)
 
