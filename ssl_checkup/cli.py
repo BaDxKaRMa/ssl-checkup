@@ -72,7 +72,7 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--json-pretty",
         action="store_true",
-        help="Pretty-print JSON output (requires --json)",
+        help="Pretty-print JSON output (implies JSON mode)",
     )
 
     parser.add_argument(
@@ -236,8 +236,21 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
         parser.print_help()
         sys.exit(1)
 
-    if getattr(args, "json_pretty", False) and not getattr(args, "json", False):
-        parser.error("--json-pretty requires --json")
+    if getattr(args, "json_pretty", False):
+        if any(
+            (
+                getattr(args, "print_cert", False),
+                getattr(args, "issuer", False),
+                getattr(args, "subject", False),
+                getattr(args, "san", False),
+            )
+        ):
+            conflict_msg = (
+                "--json-pretty cannot be combined with "
+                "--print-cert/--issuer/--subject/--san"
+            )
+            parser.error(conflict_msg)
+        args.json = True
 
     if getattr(args, "workers", 1) < 1:
         parser.error("--workers must be at least 1")

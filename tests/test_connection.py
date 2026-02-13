@@ -231,7 +231,9 @@ class TestGetCertificate:
 
         with patch("ssl_checkup.connection.ssl.DER_cert_to_PEM_cert") as mock_pem:
             mock_pem.side_effect = lambda der: (
-                f"-----BEGIN CERTIFICATE-----\n{der.decode()}\n-----END CERTIFICATE-----"
+                "-----BEGIN CERTIFICATE-----\n"
+                f"{der.decode()}\n"
+                "-----END CERTIFICATE-----"
             )
 
             result = get_certificate("example.com", 443, include_chain=True)

@@ -21,7 +21,7 @@ from .exceptions import (
     handle_socket_error,
     handle_ssl_error,
 )
-from .formatting import DebugFormatter
+from .formatting import DebugFormatter, colored
 from .parser import get_issuer_org, get_subject_cn, parse_pem_cert, parse_san
 
 STATUS_VALID = "valid"
@@ -62,6 +62,10 @@ def _is_policy_mode(args: Any) -> bool:
         or _arg(args, "subject", False)
         or _arg(args, "san", False)
     )
+
+
+def _is_json_mode(args: Any) -> bool:
+    return bool(_arg(args, "json", False) or _arg(args, "json_pretty", False))
 
 
 def _resolve_display_cert(
@@ -375,10 +379,73 @@ def _run_target(hostname: str, port: int, raw_target: str, args: Any) -> Dict[st
         }
 
 
-def _print_json(data: Any, pretty: bool) -> None:
+def _colorize_pretty_json(text: str) -> str:
+    """Apply ANSI colors to pretty JSON token types for terminal output."""
+    result: list[str] = []
+    i = 0
+    length = len(text)
+
+    while i < length:
+        char = text[i]
+
+        if char in " \t\r\n":
+            result.append(char)
+            i += 1
+            continue
+
+        if char == '"':
+            start = i
+            i += 1
+            while i < length:
+                if text[i] == "\\":
+                    i += 2
+                    continue
+                if text[i] == '"':
+                    i += 1
+                    break
+                i += 1
+            token = text[start:i]
+            j = i
+            while j < length and text[j] in " \t\r\n":
+                j += 1
+            is_key = j < length and text[j] == ":"
+            result.append(colored(token, "cyan" if is_key else "green"))
+            continue
+
+        if char == "-" or char.isdigit():
+            start = i
+            i += 1
+            while i < length and text[i] in "0123456789.eE+-":
+                i += 1
+            result.append(colored(text[start:i], "yellow"))
+            continue
+
+        if text.startswith("true", i) or text.startswith("false", i):
+            token = "true" if text.startswith("true", i) else "false"
+            i += len(token)
+            result.append(colored(token, "magenta"))
+            continue
+
+        if text.startswith("null", i):
+            i += 4
+            result.append(colored("null", "red"))
+            continue
+
+        result.append(text[i])
+        i += 1
+
+    return "".join(result)
+
+
+def _print_json(data: Any, pretty: bool, color_output: bool) -> None:
     """Print JSON payload."""
     if pretty:
-        print(json.dumps(data, indent=2, sort_keys=True, default=str))
+        pretty_json = json.dumps(data, indent=2, sort_keys=True, default=str)
+        stdout_is_tty = bool(getattr(sys.stdout, "isatty", lambda: False)())
+        if color_output and stdout_is_tty:
+            print(_colorize_pretty_json(pretty_json))
+        else:
+            print(pretty_json)
     else:
         print(json.dumps(data, separators=(",", ":"), default=str))
 
@@ -514,7 +581,7 @@ def _run_batch(targets: list[tuple[str, int, str]], args: Any) -> int:
 
     summary = _build_batch_summary(results, args)
 
-    if _arg(args, "json", False):
+    if _is_json_mode(args):
         payload: Any = results
         if len(results) == 1 and not _arg(args, "input", None):
             payload = results[0]
@@ -523,7 +590,11 @@ def _run_batch(targets: list[tuple[str, int, str]], args: Any) -> int:
                 payload = {"results": payload, "summary": summary}
             else:
                 payload = {"results": [payload], "summary": summary}
-        _print_json(payload, pretty=bool(_arg(args, "json_pretty", False)))
+        _print_json(
+            payload,
+            pretty=bool(_arg(args, "json_pretty", False)),
+            color_output=not bool(_arg(args, "no_color", False)),
+        )
     else:
         for index, result in enumerate(results):
             _print_target_human(result, args, is_batch=len(results) > 1)
@@ -595,7 +666,7 @@ def _run_single(hostname: str, port: int, raw_target: str, args: Any) -> int:
             insecure=bool(_arg(args, "insecure", False)),
         )
 
-        if _arg(args, "json", False):
+        if _is_json_mode(args):
             if not isinstance(cert_info, dict):
                 raise ValueError("Could not parse certificate details.")
             json_result = _build_json_result(
@@ -606,7 +677,11 @@ def _run_single(hostname: str, port: int, raw_target: str, args: Any) -> int:
                 display_cert,
                 args,
             )
-            _print_json(json_result, pretty=bool(_arg(args, "json_pretty", False)))
+            _print_json(
+                json_result,
+                pretty=bool(_arg(args, "json_pretty", False)),
+                color_output=color_output,
+            )
         elif _arg(args, "issuer", False):
             print_single_field(display_cert, "issuer")
         elif _arg(args, "subject", False):

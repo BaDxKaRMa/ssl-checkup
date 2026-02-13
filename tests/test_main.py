@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from ssl_checkup.main import main, print_single_field
+from ssl_checkup.main import _print_json, main, print_single_field
 
 
 class TestPrintSingleField:
@@ -567,3 +567,37 @@ class TestMain:
             timeout=10.0,
             ip_version="auto",
         )
+
+
+class TestJsonPrinting:
+    """Tests for JSON printing behavior."""
+
+    @patch("builtins.print")
+    @patch("ssl_checkup.main._colorize_pretty_json")
+    @patch("ssl_checkup.main.sys.stdout")
+    def test_pretty_json_colorized_on_tty(self, mock_stdout, mock_colorize, mock_print):
+        """Pretty JSON should be colorized on TTY output."""
+        mock_stdout.isatty.return_value = True
+        mock_colorize.return_value = "{colored}"
+
+        _print_json({"a": 1}, pretty=True, color_output=True)
+
+        mock_colorize.assert_called_once()
+        mock_print.assert_called_once_with("{colored}")
+
+    @patch("builtins.print")
+    @patch("ssl_checkup.main._colorize_pretty_json")
+    @patch("ssl_checkup.main.sys.stdout")
+    def test_pretty_json_not_colorized_without_tty(
+        self, mock_stdout, mock_colorize, mock_print
+    ):
+        """Pretty JSON should remain plain when not writing to a TTY."""
+        mock_stdout.isatty.return_value = False
+
+        _print_json({"a": 1}, pretty=True, color_output=True)
+
+        mock_colorize.assert_not_called()
+        mock_print.assert_called_once()
+        printed = mock_print.call_args.args[0]
+        assert printed.startswith("{")
+        assert '"a": 1' in printed

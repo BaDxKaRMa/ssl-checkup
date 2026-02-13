@@ -292,13 +292,41 @@ class TestValidateArgs:
         validate_args(args, parser)
         parser.print_help.assert_not_called()
 
-    def test_validate_args_json_pretty_requires_json(self):
-        """Test --json-pretty validation."""
+    def test_validate_args_json_pretty_implies_json(self):
+        """Test --json-pretty auto-enables JSON mode."""
         args = Mock()
         args.website = "example.com"
         args.input = None
         args.json_pretty = True
         args.json = False
+        args.print_cert = False
+        args.issuer = False
+        args.subject = False
+        args.san = False
+        args.workers = 4
+        args.warn_days = 30
+        args.critical_days = 7
+        args.timeout = 10.0
+        args.retries = 0
+        args.retry_delay = 0.5
+
+        parser = Mock()
+
+        validate_args(args, parser)
+        parser.error.assert_not_called()
+        assert args.json is True
+
+    def test_validate_args_json_pretty_conflicts_with_output_modes(self):
+        """Test --json-pretty conflicts with non-JSON output modes."""
+        args = Mock()
+        args.website = "example.com"
+        args.input = None
+        args.json_pretty = True
+        args.json = False
+        args.print_cert = False
+        args.issuer = True
+        args.subject = False
+        args.san = False
         args.workers = 4
         args.warn_days = 30
         args.critical_days = 7
