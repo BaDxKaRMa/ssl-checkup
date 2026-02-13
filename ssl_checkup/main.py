@@ -1,6 +1,7 @@
 """Main application logic and entry point."""
 
 import json
+import ipaddress
 import socket
 import ssl
 import sys
@@ -77,6 +78,48 @@ def _resolve_display_cert(
                 return parsed_cert
 
     return cert
+
+
+def _hostname_matches(cert: Dict[str, Any], hostname: str) -> bool:
+    """Check whether the certificate matches the requested hostname."""
+    hostname_lower = hostname.lower()
+
+    def _dns_name_matches(pattern: str) -> bool:
+        normalized = pattern.lower()
+        if "*" not in normalized:
+            return normalized == hostname_lower
+
+        # Only allow a single wildcard in the left-most label.
+        if normalized.startswith("*.") and normalized.count("*") == 1:
+            if "." not in hostname_lower:
+                return False
+            return hostname_lower.split(".", 1)[1] == normalized[2:]
+        return False
+
+    is_ip = False
+    try:
+        ipaddress.ip_address(hostname)
+        is_ip = True
+    except ValueError:
+        is_ip = False
+
+    san_entries = cert.get("subjectAltName", [])
+    dns_names = [entry[1] for entry in san_entries if entry[0] == "DNS"]
+    ip_names = [entry[1] for entry in san_entries if entry[0] in ("IP Address", "IP")]
+
+    if is_ip:
+        if ip_names:
+            return hostname in ip_names
+        return False
+
+    if dns_names:
+        return any(_dns_name_matches(pattern) for pattern in dns_names)
+
+    subject_name = get_subject_cn(cert)
+    if subject_name:
+        return _dns_name_matches(subject_name)
+
+    return False
 
 
 def _calculate_status(
@@ -167,6 +210,7 @@ def _build_json_result(
         "tls_version": cert_info.get("tls_version"),
         "cipher": cert_info.get("cipher"),
         "insecure": bool(_arg(args, "insecure", False)),
+        "hostname_match": _hostname_matches(cert, hostname),
         "issuer": issuer,
         "subject": subject,
         "san": san,

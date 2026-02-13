@@ -151,6 +151,29 @@ ssl-checkup --json --json-pretty example.com
 ssl-checkup --warn-days 30 --critical-days 7 example.com
 ```
 
+JSON schema (stable fields):
+
+| Field            | Type                  | Notes |
+| ---------------- | --------------------- | ----- |
+| `target`         | string                | Original target input (e.g. `example.com:8443`) |
+| `hostname`       | string                | Parsed hostname used for TLS SNI |
+| `port`           | integer               | Parsed port |
+| `resolved_ip`    | string \| null        | Remote IP if available |
+| `tls_version`    | string \| null        | Negotiated TLS version |
+| `cipher`         | array \| string \| null | Cipher details from Python SSL |
+| `insecure`       | boolean               | Whether `--insecure` was enabled |
+| `hostname_match` | boolean               | Hostname verification result against cert SAN/CN |
+| `issuer`         | string \| null        | Issuer organization when available |
+| `subject`        | string \| null        | Subject common name when available |
+| `san`            | array[string]         | DNS SAN entries |
+| `not_before`     | string \| null        | Certificate notBefore |
+| `not_after`      | string \| null        | Certificate notAfter |
+| `checked_at`     | string                | UTC timestamp in ISO-8601 format |
+| `warning_days`   | integer               | Effective warning threshold |
+| `critical_days`  | integer               | Effective critical threshold |
+| `status`         | string                | Present in policy mode: `valid`, `warning`, `critical`, `expired` |
+| `days_left`      | integer               | Present in policy mode |
+
 Exit codes in policy mode:
 - `0` valid
 - `1` warning

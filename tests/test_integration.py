@@ -244,6 +244,7 @@ class TestCliInProcessIntegration:
 
         payload = json.loads(mock_stdout.getvalue())
         assert payload["hostname"] == "example.com"
+        assert payload["hostname_match"] is True
         assert payload["status"] == "valid"
         assert payload["days_left"] >= 0
 
@@ -341,6 +342,8 @@ class TestCliInProcessIntegration:
         payload = json.loads(mock_stdout.getvalue())
         assert isinstance(payload, list)
         assert len(payload) == 2
+        assert payload[0]["hostname_match"] is True
+        assert payload[1]["hostname_match"] is False
         assert payload[0]["status"] == "valid"
 
 
