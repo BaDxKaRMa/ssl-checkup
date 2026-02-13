@@ -65,7 +65,7 @@ def _is_policy_mode(args: Any) -> bool:
 def _resolve_display_cert(
     cert: Dict[str, Any], cert_info: Dict[str, Any], insecure: bool
 ) -> Dict[str, Any]:
-    """Resolve displayable certificate details, including PEM fallback in insecure mode."""
+    """Resolve certificate details, with PEM fallback when insecure mode is used."""
     if cert.get("notAfter"):
         return cert
 
