@@ -250,6 +250,33 @@ class TestCliInProcessIntegration:
         assert payload["days_left"] >= 0
 
     @patch("ssl_checkup.main.get_certificate")
+    @patch("sys.stdout", new_callable=StringIO)
+    def test_json_pretty_implies_json_output(self, mock_stdout, mock_get_cert):
+        """Test that --json-pretty works without explicitly setting --json."""
+        future_date = datetime.utcnow() + timedelta(days=60)
+        past_date = datetime.utcnow() - timedelta(days=10)
+        mock_get_cert.return_value = {
+            "cert": {
+                "notAfter": future_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "notBefore": past_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "subject": [[("commonName", "example.com")]],
+                "issuer": [[("organizationName", "Example CA")]],
+                "subjectAltName": [("DNS", "example.com")],
+            },
+            "pem": "",
+            "resolved_ip": "93.184.216.34",
+            "tls_version": "TLSv1.3",
+            "cipher": ("TLS_AES_256_GCM_SHA384", "TLSv1.3", 256),
+        }
+
+        with patch.object(sys, "argv", ["ssl-checkup", "example.com", "--json-pretty"]):
+            main()
+
+        payload = json.loads(mock_stdout.getvalue())
+        assert payload["hostname"] == "example.com"
+        assert payload["hostname_match"] is True
+
+    @patch("ssl_checkup.main.get_certificate")
     def test_warn_exit_code(self, mock_get_cert):
         """Test warning threshold exit code."""
         near_date = datetime.utcnow() + timedelta(days=5)
@@ -541,7 +568,7 @@ class TestPackageIntegration:
 
         assert hasattr(ssl_checkup, "main")
         assert hasattr(ssl_checkup, "__version__")
-        assert ssl_checkup.__version__ == "1.1.1"
+        assert ssl_checkup.__version__ == "1.2.0"
 
     def test_module_execution(self):
         """Test that the module can be executed with -m flag."""

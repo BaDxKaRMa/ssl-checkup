@@ -89,9 +89,9 @@ ssl-checkup [OPTIONS] WEBSITE[:PORT]
 
 | Option               | Description                                                |
 | -------------------- | ---------------------------------------------------------- |
-| `--no-color`         | Disable color output for plain text                        |
+| `--no-color`         | Disable color output (plain text and pretty JSON)          |
 | `--json`             | Output certificate data as JSON                            |
-| `--json-pretty`      | Pretty-print JSON output (requires `--json`)               |
+| `--json-pretty`      | Pretty-print JSON output (implies JSON mode)               |
 | `--output FILE`      | Write output to a file (`-` keeps stdout)                  |
 | `-p`, `--print-cert` | Print the PEM certificate to stdout                        |
 | `--show-chain`       | Include certificate chain details in output                |
@@ -153,13 +153,16 @@ ssl-checkup --no-color example.com > info.txt  # Plain text output
 
 ```bash
 ssl-checkup --json example.com
-ssl-checkup --json --json-pretty example.com
+ssl-checkup --json-pretty example.com
+ssl-checkup --json-pretty --no-color example.com
 ssl-checkup --json --show-chain example.com
 ssl-checkup --retries 2 --retry-delay 1.0 example.com
 ssl-checkup --warn-days 30 --critical-days 7 example.com
 ssl-checkup --input targets.txt --json --summary
 ssl-checkup --json example.com --output report.json
 ```
+
+`--json-pretty` uses colorized syntax highlighting when writing to a TTY. Use `--no-color` for plain pretty JSON.
 
 JSON schema (stable fields):
 
@@ -248,18 +251,18 @@ This project uses automated PyPI publishing via GitHub Actions. To release a new
 **Option 1: Using Makefile (Recommended)**
 ```bash
 # Create and push a new release in one command
-make release-push VERSION=1.1.0
+make release-push VERSION=1.2.0
 ```
 
 **Option 2: Manual Process**
 ```bash
 # 1. Update version in pyproject.toml
-version = "1.1.1"
+version = "1.2.0"
 
 # 2. Commit and tag the release
 git add pyproject.toml
-git commit -m "Release v1.1.0"
-git tag v1.1.0
+git commit -m "Release v1.2.0"
+git tag v1.2.0
 
 # 3. Push to trigger automated PyPI upload
 git push && git push --tags
