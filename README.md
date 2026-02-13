@@ -90,11 +90,19 @@ ssl-checkup [OPTIONS] WEBSITE[:PORT]
 | Option               | Description                                                |
 | -------------------- | ---------------------------------------------------------- |
 | `--no-color`         | Disable color output for plain text                        |
+| `--json`             | Output certificate data as JSON                            |
+| `--json-pretty`      | Pretty-print JSON output (requires `--json`)               |
 | `-p`, `--print-cert` | Print the PEM certificate to stdout                        |
 | `--debug`            | Enable debug output for troubleshooting                    |
 | `-i`, `--issuer`     | Print only the certificate issuer                          |
 | `-s`, `--subject`    | Print only the certificate subject                         |
 | `-a`, `--san`        | Print only the Subject Alternative Names (SANs)            |
+| `--warn-days N`      | Warning threshold in days before expiry (default: 30)      |
+| `--critical-days N`  | Critical threshold in days before expiry (default: 7)      |
+| `--timeout SEC`      | Connection timeout in seconds (default: 10)                |
+| `--ip-version`       | `auto`, `4`, or `6` network family preference              |
+| `--input FILE`       | Read targets from file (`-` reads from stdin)              |
+| `--workers N`        | Worker threads for batch mode (`--input`)                  |
 | `--insecure`, `-k`   | Allow insecure connections (bypass certificate validation) |
 | `--version`          | Show version and exit                                      |
 | `-h`, `--help`       | Show help message                                          |
@@ -133,6 +141,27 @@ ssl-checkup --insecure expired.badssl.com  # Skip validation
 ```bash
 ssl-checkup -p example.com > cert.pem       # Save PEM certificate
 ssl-checkup --no-color example.com > info.txt  # Plain text output
+```
+
+**JSON output and policy exit codes:**
+
+```bash
+ssl-checkup --json example.com
+ssl-checkup --json --json-pretty example.com
+ssl-checkup --warn-days 30 --critical-days 7 example.com
+```
+
+Exit codes in policy mode:
+- `0` valid
+- `1` warning
+- `2` critical/expired
+- `10+` operational errors (DNS/socket/SSL/internal)
+
+**Batch checks:**
+
+```bash
+ssl-checkup --input targets.txt --workers 8
+cat targets.txt | ssl-checkup --input - --json --workers 4
 ```
 
 ## Requirements
