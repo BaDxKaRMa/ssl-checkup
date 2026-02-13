@@ -41,7 +41,7 @@ class TestHandleSocketError:
         error_output = mock_stderr.getvalue()
         assert "Could not resolve or connect to 'example.com:443'" in error_output
         assert "Please check the hostname and your network connection" in error_output
-        mock_exit.assert_called_once_with(2)
+        mock_exit.assert_called_once_with(10)
 
     @patch("ssl_checkup.exceptions.sys.exit")
     @patch("ssl_checkup.exceptions.traceback.print_exc")
@@ -57,7 +57,7 @@ class TestHandleSocketError:
         assert "[DEBUG] socket.gaierror:" in error_output
         assert "Name or service not known" in error_output
         mock_traceback.assert_called_once()
-        mock_exit.assert_called_once_with(2)
+        mock_exit.assert_called_once_with(10)
 
     @patch("ssl_checkup.exceptions.sys.exit")
     @patch("sys.stderr", new_callable=StringIO)
@@ -69,7 +69,7 @@ class TestHandleSocketError:
 
         error_output = mock_stderr.getvalue()
         assert "Could not resolve or connect to 'example.com:8443'" in error_output
-        mock_exit.assert_called_once_with(2)
+        mock_exit.assert_called_once_with(10)
 
 
 class TestHandleSslError:
@@ -89,7 +89,7 @@ class TestHandleSslError:
         assert "--insecure" in error_output
         assert "-k" in error_output
         assert "ssl-checkup example.com:443 --insecure" in error_output
-        mock_exit.assert_called_once_with(1)
+        mock_exit.assert_called_once_with(11)
 
     @patch("ssl_checkup.exceptions.sys.exit")
     @patch("sys.stderr", new_callable=StringIO)
@@ -102,7 +102,7 @@ class TestHandleSslError:
         error_output = mock_stderr.getvalue()
         assert "SSL Error:" in error_output
         assert "SSL handshake failed" in error_output
-        mock_exit.assert_called_once_with(1)
+        mock_exit.assert_called_once_with(11)
 
     @patch("ssl_checkup.exceptions.sys.exit")
     @patch("ssl_checkup.exceptions.traceback.print_exc")
@@ -118,7 +118,7 @@ class TestHandleSslError:
         assert "[DEBUG] SSL Exception:" in error_output
         assert "SSL handshake failed" in error_output
         mock_traceback.assert_called_once()
-        mock_exit.assert_called_once_with(1)
+        mock_exit.assert_called_once_with(11)
 
     @patch("ssl_checkup.exceptions.sys.exit")
     @patch("sys.stderr", new_callable=StringIO)
@@ -130,7 +130,7 @@ class TestHandleSslError:
 
         error_output = mock_stderr.getvalue()
         assert "ssl-checkup example.com:8443 --insecure" in error_output
-        mock_exit.assert_called_once_with(1)
+        mock_exit.assert_called_once_with(11)
 
     @patch("ssl_checkup.exceptions.colored")
     @patch("ssl_checkup.exceptions.sys.exit")
@@ -148,7 +148,7 @@ class TestHandleSslError:
         error_output = mock_stderr.getvalue()
         assert "[red]SSL Certificate verification failed:[/red]" in error_output
         assert "[yellow]--insecure[/yellow]" in error_output
-        mock_exit.assert_called_once_with(1)
+        mock_exit.assert_called_once_with(11)
 
 
 class TestHandleGeneralError:
@@ -164,7 +164,7 @@ class TestHandleGeneralError:
 
         error_output = mock_stderr.getvalue()
         assert "Error: Something went wrong" in error_output
-        mock_exit.assert_called_once_with(1)
+        mock_exit.assert_called_once_with(12)
 
     @patch("ssl_checkup.exceptions.sys.exit")
     @patch("ssl_checkup.exceptions.traceback.print_exc")
@@ -179,7 +179,7 @@ class TestHandleGeneralError:
         assert "Error: Something went wrong" in error_output
         assert "[DEBUG] Exception:" in error_output
         mock_traceback.assert_called_once()
-        mock_exit.assert_called_once_with(1)
+        mock_exit.assert_called_once_with(12)
 
     @patch("ssl_checkup.exceptions.sys.exit")
     @patch("sys.stderr", new_callable=StringIO)
@@ -191,7 +191,7 @@ class TestHandleGeneralError:
 
         error_output = mock_stderr.getvalue()
         assert "Error: Invalid input" in error_output
-        mock_exit.assert_called_once_with(1)
+        mock_exit.assert_called_once_with(12)
 
     @patch("ssl_checkup.exceptions.sys.exit")
     @patch("sys.stderr", new_callable=StringIO)
@@ -203,7 +203,7 @@ class TestHandleGeneralError:
 
         error_output = mock_stderr.getvalue()
         assert "Error: Type mismatch" in error_output
-        mock_exit.assert_called_once_with(1)
+        mock_exit.assert_called_once_with(12)
 
 
 class TestColoredFallback:

@@ -23,6 +23,11 @@ except ImportError:
         return str(text)
 
 
+EXIT_OPERATIONAL_ERROR = 10
+EXIT_SSL_ERROR = 11
+EXIT_GENERAL_ERROR = 12
+
+
 def handle_keyboard_interrupt() -> None:
     """Handle Ctrl+C interruption."""
     print("\nOperation cancelled by user.", file=sys.stderr)
@@ -42,7 +47,7 @@ def handle_socket_error(
         print("\n[DEBUG] socket.gaierror:", file=sys.stderr)
         print(e, file=sys.stderr)
         traceback.print_exc()
-    sys.exit(2)
+    sys.exit(EXIT_OPERATIONAL_ERROR)
 
 
 def handle_ssl_error(
@@ -74,7 +79,7 @@ def handle_ssl_error(
         print("\n[DEBUG] SSL Exception:", file=sys.stderr)
         print(e, file=sys.stderr)
         traceback.print_exc()
-    sys.exit(1)
+    sys.exit(EXIT_SSL_ERROR)
 
 
 def handle_general_error(e: Exception, debug: bool = False) -> None:
@@ -84,4 +89,4 @@ def handle_general_error(e: Exception, debug: bool = False) -> None:
         print("\n[DEBUG] Exception:", file=sys.stderr)
         print(e, file=sys.stderr)
         traceback.print_exc()
-    sys.exit(1)
+    sys.exit(EXIT_GENERAL_ERROR)
