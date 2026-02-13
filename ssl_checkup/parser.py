@@ -103,13 +103,21 @@ def parse_pem_cert(pem_cert: Optional[str]) -> Optional[Dict[str, Any]]:
         # Extract SANs
         san_list = []
         try:
-            extension_oid = getattr(getattr(x509, "oid", None), "ExtensionOID", None)
-            if extension_oid and hasattr(extension_oid, "SUBJECT_ALTERNATIVE_NAME"):
-                san_ext = cert.extensions.get_extension_for_oid(
-                    extension_oid.SUBJECT_ALTERNATIVE_NAME
-                )
-            else:
-                san_ext = cert.extensions.get_extension_for_oid("subjectAltName")
+            san_oid = None
+            try:
+                from cryptography.x509.oid import ExtensionOID
+
+                san_oid = ExtensionOID.SUBJECT_ALTERNATIVE_NAME
+            except Exception:  # nosec B110
+                # Fallback for mocked or atypical cryptography modules.
+                object_identifier = getattr(x509, "ObjectIdentifier", None)
+                if object_identifier is not None:
+                    san_oid = object_identifier("2.5.29.17")
+
+            if san_oid is None:
+                raise ValueError("Could not resolve SAN OID")
+
+            san_ext = cert.extensions.get_extension_for_oid(san_oid)
 
             # Extract DNS names from SAN extension value
             # Use hasattr to check for get_values_for_type method
