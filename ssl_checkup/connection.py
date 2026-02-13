@@ -5,8 +5,44 @@ import ssl
 from typing import Any, Dict, Union
 
 
+def _create_connection(
+    hostname: str, port: int, timeout: float, ip_version: str
+) -> socket.socket:
+    """Create a TCP socket with optional IP family pinning."""
+    if ip_version == "auto":
+        return socket.create_connection((hostname, port), timeout=timeout)
+
+    family = socket.AF_INET if ip_version == "4" else socket.AF_INET6
+    addr_info = socket.getaddrinfo(
+        hostname,
+        port,
+        family=family,
+        type=socket.SOCK_STREAM,
+    )
+
+    last_error: OSError | None = None
+    for af, socktype, proto, _, sockaddr in addr_info:
+        sock = socket.socket(af, socktype, proto)
+        try:
+            sock.settimeout(timeout)
+            sock.connect(sockaddr)
+            return sock
+        except OSError as exc:
+            last_error = exc
+            sock.close()
+
+    if last_error is not None:
+        raise last_error
+    raise socket.gaierror(f"No {ip_version} records found for {hostname}")
+
+
 def get_certificate(
-    hostname: str, port: int, pem: bool = False, insecure: bool = False
+    hostname: str,
+    port: int,
+    pem: bool = False,
+    insecure: bool = False,
+    timeout: float = 10.0,
+    ip_version: str = "auto",
 ) -> Union[str, Dict[str, Any]]:
     """
     Retrieve SSL certificate from a remote server.
@@ -26,7 +62,9 @@ def get_certificate(
     else:
         context = ssl.create_default_context()
 
-    with socket.create_connection((hostname, port), timeout=10) as sock:
+    with _create_connection(
+        hostname, port, timeout=timeout, ip_version=ip_version
+    ) as sock:
         resolved_ip = sock.getpeername()[0]
         with context.wrap_socket(sock, server_hostname=hostname) as ssock:
             tls_version = ssock.version()

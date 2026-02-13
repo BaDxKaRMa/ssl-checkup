@@ -206,3 +206,72 @@ class TestGetCertificate:
         """Test certificate retrieval with invalid hostname."""
         with pytest.raises(socket.gaierror):
             get_certificate("invalid.hostname.that.does.not.exist", 443)
+
+    @patch("ssl_checkup.connection.socket.getaddrinfo")
+    @patch("ssl_checkup.connection.socket.socket")
+    @patch("ssl_checkup.connection.ssl.create_default_context")
+    def test_get_certificate_ipv4_mode(
+        self, mock_context, mock_socket_ctor, mock_getaddrinfo
+    ):
+        """Test certificate retrieval with forced IPv4 mode."""
+        mock_getaddrinfo.return_value = [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.168.1.1", 443))
+        ]
+
+        mock_sock = Mock()
+        mock_sock.__enter__ = Mock(return_value=mock_sock)
+        mock_sock.__exit__ = Mock(return_value=False)
+        mock_sock.getpeername.return_value = ("192.168.1.1", 443)
+        mock_socket_ctor.return_value = mock_sock
+
+        mock_ssl_sock = Mock()
+        mock_ssl_sock.version.return_value = "TLSv1.3"
+        mock_ssl_sock.cipher.return_value = ("TLS_AES_256_GCM_SHA384", "TLSv1.3", 256)
+        mock_ssl_sock.getpeercert.side_effect = [
+            b"mock_der_cert",
+            {"subject": [[("commonName", "example.com")]]},
+        ]
+
+        mock_ssl_context = Mock()
+        mock_ssl_context.wrap_socket.return_value = MagicMock()
+        mock_ssl_context.wrap_socket.return_value.__enter__.return_value = mock_ssl_sock
+        mock_context.return_value = mock_ssl_context
+
+        with patch("ssl_checkup.connection.ssl.DER_cert_to_PEM_cert") as mock_pem:
+            mock_pem.return_value = (
+                "-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----"
+            )
+            result = get_certificate("example.com", 443, ip_version="4")
+
+        assert isinstance(result, dict)
+        mock_getaddrinfo.assert_called_once()
+        mock_sock.settimeout.assert_called_once_with(10.0)
+
+    @patch("ssl_checkup.connection.socket.create_connection")
+    @patch("ssl_checkup.connection.ssl.create_default_context")
+    def test_get_certificate_custom_timeout(self, mock_context, mock_socket):
+        """Test certificate retrieval with custom timeout."""
+        mock_sock = Mock()
+        mock_sock.getpeername.return_value = ("192.168.1.1", 443)
+        mock_socket.return_value.__enter__.return_value = mock_sock
+
+        mock_ssl_sock = Mock()
+        mock_ssl_sock.version.return_value = "TLSv1.3"
+        mock_ssl_sock.cipher.return_value = ("TLS_AES_256_GCM_SHA384", "TLSv1.3", 256)
+        mock_ssl_sock.getpeercert.side_effect = [
+            b"mock_der_cert",
+            {"subject": [[("commonName", "example.com")]]},
+        ]
+
+        mock_ssl_context = Mock()
+        mock_ssl_context.wrap_socket.return_value = MagicMock()
+        mock_ssl_context.wrap_socket.return_value.__enter__.return_value = mock_ssl_sock
+        mock_context.return_value = mock_ssl_context
+
+        with patch("ssl_checkup.connection.ssl.DER_cert_to_PEM_cert") as mock_pem:
+            mock_pem.return_value = (
+                "-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----"
+            )
+            get_certificate("example.com", 443, timeout=2.5)
+
+        mock_socket.assert_called_with(("example.com", 443), timeout=2.5)

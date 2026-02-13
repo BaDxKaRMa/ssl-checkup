@@ -115,7 +115,13 @@ class TestMain:
         mock_version_check.assert_called_once_with(mock_args)
         mock_validate.assert_called_once_with(mock_args, mock_parser)
         mock_parse_website.assert_called_once_with("example.com")
-        mock_get_cert.assert_called_once_with("example.com", 443, insecure=False)
+        mock_get_cert.assert_called_once_with(
+            "example.com",
+            443,
+            insecure=False,
+            timeout=10.0,
+            ip_version="auto",
+        )
         mock_pretty_print.assert_called_once()
 
     @patch("ssl_checkup.main.create_parser")
@@ -154,7 +160,12 @@ class TestMain:
 
         # Verify PEM certificate is printed
         mock_get_cert.assert_called_once_with(
-            "example.com", 443, pem=True, insecure=False
+            "example.com",
+            443,
+            pem=True,
+            insecure=False,
+            timeout=10.0,
+            ip_version="auto",
         )
         mock_print.assert_called_once_with(
             "-----BEGIN CERTIFICATE-----\nMOCK\n-----END CERTIFICATE-----"
@@ -549,4 +560,10 @@ class TestMain:
         main()
 
         # Verify insecure flag is passed to get_certificate
-        mock_get_cert.assert_called_once_with("example.com", 443, insecure=True)
+        mock_get_cert.assert_called_once_with(
+            "example.com",
+            443,
+            insecure=True,
+            timeout=10.0,
+            ip_version="auto",
+        )
