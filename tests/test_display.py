@@ -1,5 +1,6 @@
 """Tests for display module."""
 
+from datetime import datetime, timedelta
 from io import StringIO
 from unittest.mock import patch
 
@@ -141,9 +142,11 @@ class TestPrettyPrintCert:
         empty_cert = {"notAfter": None}
 
         # Mock parsed PEM cert
+        future_date = datetime.utcnow() + timedelta(days=90)
+        past_date = datetime.utcnow() - timedelta(days=30)
         parsed_cert = {
-            "notAfter": "Dec 15 23:59:59 2025 GMT",
-            "notBefore": "Sep 15 00:00:00 2024 GMT",
+            "notAfter": future_date.strftime("%b %d %H:%M:%S %Y GMT"),
+            "notBefore": past_date.strftime("%b %d %H:%M:%S %Y GMT"),
             "subject": [[("commonName", "example.com")]],
             "issuer": [[("organizationName", "Example CA")]],
             "subjectAltName": [("DNS", "example.com")],

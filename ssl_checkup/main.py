@@ -48,8 +48,10 @@ def main() -> None:
     # Validate arguments
     validate_args(args, parser)
 
-    # Parse website argument
-    hostname, port = parse_website_arg(args.website)
+    try:
+        hostname, port = parse_website_arg(args.website)
+    except ValueError as e:
+        parser.error(f"Invalid website argument: {e}")
 
     # Setup debug and color output
     debug = args.debug

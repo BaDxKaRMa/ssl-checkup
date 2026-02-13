@@ -7,13 +7,11 @@ from typing import Any, Dict
 # Handle optional cryptography dependency
 try:
     from cryptography import x509
-    from cryptography.hazmat.backends import default_backend
 
     CRYPTOGRAPHY_AVAILABLE = True
 except ImportError:
     CRYPTOGRAPHY_AVAILABLE = False
     x509 = None  # type: ignore
-    default_backend = None  # type: ignore
 
 
 def parse_san(cert: Dict[str, Any]) -> List[str]:
@@ -87,16 +85,11 @@ def parse_pem_cert(pem_cert: Optional[str]) -> Optional[Dict[str, Any]]:
         Certificate dictionary compatible with pretty_print_cert, or
         None if parsing fails
     """
-    if (
-        not CRYPTOGRAPHY_AVAILABLE
-        or not pem_cert
-        or x509 is None
-        or default_backend is None
-    ):
+    if not CRYPTOGRAPHY_AVAILABLE or not pem_cert or x509 is None:
         return None
 
     try:
-        cert = x509.load_pem_x509_certificate(pem_cert.encode(), default_backend())
+        cert = x509.load_pem_x509_certificate(pem_cert.encode())
 
         # Extract basic info
         subject_attrs = {}
@@ -110,11 +103,14 @@ def parse_pem_cert(pem_cert: Optional[str]) -> Optional[Dict[str, Any]]:
         # Extract SANs
         san_list = []
         try:
-            from cryptography.x509.oid import ExtensionOID
+            extension_oid = getattr(getattr(x509, "oid", None), "ExtensionOID", None)
+            if extension_oid and hasattr(extension_oid, "SUBJECT_ALTERNATIVE_NAME"):
+                san_ext = cert.extensions.get_extension_for_oid(
+                    extension_oid.SUBJECT_ALTERNATIVE_NAME
+                )
+            else:
+                san_ext = cert.extensions.get_extension_for_oid("subjectAltName")
 
-            san_ext = cert.extensions.get_extension_for_oid(
-                ExtensionOID.SUBJECT_ALTERNATIVE_NAME
-            )
             # Extract DNS names from SAN extension value
             # Use hasattr to check for get_values_for_type method
             if hasattr(san_ext.value, "get_values_for_type"):
@@ -126,8 +122,6 @@ def parse_pem_cert(pem_cert: Optional[str]) -> Optional[Dict[str, Any]]:
                 except (AttributeError, TypeError):
                     # Fallback for different cryptography versions
                     pass
-        except (x509.ExtensionNotFound, AttributeError, ImportError):
-            pass
         except Exception:  # nosec B110
             pass
 

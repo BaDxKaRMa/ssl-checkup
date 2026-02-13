@@ -240,6 +240,13 @@ class TestOutputFormatter:
         result = formatter.format_status(-1)
         assert "EXPIRED" in result
 
+    def test_format_status_custom_warning_days(self):
+        """Test custom warning threshold support."""
+        formatter = OutputFormatter(color_enabled=False)
+
+        assert formatter.format_status(40, warning_days=45) == "WARNING (40 days left)"
+        assert formatter.format_status(40, warning_days=30) == "VALID (40 days left)"
+
 
 class TestDebugFormatter:
     """Test debug formatting functionality."""

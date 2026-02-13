@@ -56,19 +56,19 @@ class OutputFormatter:
         """Format query text."""
         return colored(text, "cyan") if self.color_enabled else text
 
-    def format_status(self, days_left: int) -> str:
+    def format_status(self, days_left: int, warning_days: int = 30) -> str:
         """Format certificate status based on days remaining."""
         if self.color_enabled:
             if days_left < 0:
                 return colored("EXPIRED", "red")
-            elif days_left <= 30:
+            elif days_left <= warning_days:
                 return colored(f"WARNING ({days_left} days left)", "yellow")
             else:
                 return colored(f"VALID ({days_left} days left)", "green")
         else:
             if days_left < 0:
                 return "EXPIRED"
-            elif days_left <= 30:
+            elif days_left <= warning_days:
                 return f"WARNING ({days_left} days left)"
             else:
                 return f"VALID ({days_left} days left)"

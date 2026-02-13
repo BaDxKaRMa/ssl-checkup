@@ -99,6 +99,16 @@ class TestCreateParser:
         args = parser.parse_args(["example.com", "-a"])
         assert args.san is True
 
+    def test_output_mode_flags_are_mutually_exclusive(self):
+        """Test mutually exclusive output mode flags."""
+        parser = create_parser()
+
+        with pytest.raises(SystemExit):
+            parser.parse_args(["example.com", "--issuer", "--subject"])
+
+        with pytest.raises(SystemExit):
+            parser.parse_args(["example.com", "--print-cert", "--san"])
+
 
 class TestParseWebsiteArg:
     """Test website argument parsing."""
@@ -137,6 +147,11 @@ class TestParseWebsiteArg:
         """Test parsing with invalid port."""
         with pytest.raises(ValueError):
             parse_website_arg("example.com:not_a_number")
+
+    def test_invalid_port_range(self):
+        """Test parsing with out-of-range port."""
+        with pytest.raises(ValueError):
+            parse_website_arg("example.com:70000")
 
 
 class TestHandleVersionCheck:

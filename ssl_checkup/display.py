@@ -63,7 +63,7 @@ def pretty_print_cert(
     subject_match = subject_val.lower() == query
 
     # Format status
-    status = formatter.format_status(days_left)
+    status = formatter.format_status(days_left, warning_days=days_to_warn)
 
     # Print certificate information
     print(

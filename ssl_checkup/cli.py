@@ -40,7 +40,9 @@ def create_parser() -> argparse.ArgumentParser:
 
     parser.add_argument("--no-color", action="store_true", help="Disable color output")
 
-    parser.add_argument(
+    output_mode_group = parser.add_mutually_exclusive_group()
+
+    output_mode_group.add_argument(
         "-p",
         "--print-cert",
         action="store_true",
@@ -53,15 +55,15 @@ def create_parser() -> argparse.ArgumentParser:
         help="Enable debug output for troubleshooting",
     )
 
-    parser.add_argument(
+    output_mode_group.add_argument(
         "-i", "--issuer", action="store_true", help="Print only the issuer"
     )
 
-    parser.add_argument(
+    output_mode_group.add_argument(
         "-s", "--subject", action="store_true", help="Print only the subject"
     )
 
-    parser.add_argument(
+    output_mode_group.add_argument(
         "-a",
         "--san",
         action="store_true",
@@ -81,12 +83,40 @@ def parse_website_arg(website: str) -> tuple[str, int]:
     Returns:
         Tuple of (hostname, port)
     """
-    if ":" in website:
-        hostname, port_str = website.split(":", 1)
+    hostname = website
+    port = 443
+
+    if website.startswith("["):
+        end_bracket = website.find("]")
+        if end_bracket == -1:
+            raise ValueError("Invalid IPv6 format. Use [address]:port syntax.")
+
+        hostname = website[1:end_bracket]
+        remainder = website[end_bracket + 1 :]
+        if remainder:
+            if not remainder.startswith(":"):
+                raise ValueError(
+                    "Invalid IPv6 format. Use [address]:port syntax for custom ports."
+                )
+            port_str = remainder[1:]
+            if not port_str:
+                raise ValueError("Port is missing after ':'.")
+            port = int(port_str)
+    elif website.count(":") == 1:
+        hostname, port_str = website.rsplit(":", 1)
+        if not hostname:
+            raise ValueError("Hostname cannot be empty.")
+        if not port_str:
+            raise ValueError("Port is missing after ':'.")
         port = int(port_str)
-    else:
+    elif ":" in website:
+        # Unbracketed IPv6 address without a custom port.
         hostname = website
-        port = 443
+
+    if not hostname.strip():
+        raise ValueError("Hostname cannot be empty.")
+    if port < 1 or port > 65535:
+        raise ValueError("Port must be between 1 and 65535.")
     return hostname, port
 
 
