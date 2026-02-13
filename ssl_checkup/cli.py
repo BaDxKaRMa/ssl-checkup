@@ -101,6 +101,12 @@ def create_parser() -> argparse.ArgumentParser:
         help="Enable debug output for troubleshooting",
     )
 
+    parser.add_argument(
+        "--show-chain",
+        action="store_true",
+        help="Include certificate chain details in output",
+    )
+
     output_mode_group.add_argument(
         "-i", "--issuer", action="store_true", help="Print only the issuer"
     )

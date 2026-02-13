@@ -346,6 +346,42 @@ class TestCliInProcessIntegration:
         assert payload[1]["hostname_match"] is False
         assert payload[0]["status"] == "valid"
 
+    @patch("ssl_checkup.main.get_certificate")
+    @patch("sys.stdout", new_callable=StringIO)
+    def test_json_output_with_chain(self, mock_stdout, mock_get_cert):
+        """Test JSON output with certificate chain summary."""
+        future_date = datetime.utcnow() + timedelta(days=60)
+        past_date = datetime.utcnow() - timedelta(days=10)
+        mock_get_cert.return_value = {
+            "cert": {
+                "notAfter": future_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "notBefore": past_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "subject": [[("commonName", "example.com")]],
+                "issuer": [[("organizationName", "Example CA")]],
+                "subjectAltName": [("DNS", "example.com")],
+            },
+            "pem": "",
+            "resolved_ip": "93.184.216.34",
+            "tls_version": "TLSv1.3",
+            "cipher": ("TLS_AES_256_GCM_SHA384", "TLSv1.3", 256),
+            "chain_pem": [
+                "-----BEGIN CERTIFICATE-----\nleaf\n-----END CERTIFICATE-----",
+                "-----BEGIN CERTIFICATE-----\nissuer\n-----END CERTIFICATE-----",
+            ],
+            "chain_source": "verified",
+        }
+
+        with patch.object(
+            sys,
+            "argv",
+            ["ssl-checkup", "example.com", "--json", "--show-chain"],
+        ):
+            main()
+
+        payload = json.loads(mock_stdout.getvalue())
+        assert payload["chain_source"] == "verified"
+        assert len(payload["chain"]) == 2
+
 
 class TestPackageIntegration:
     """Integration tests for package functionality."""

@@ -120,6 +120,7 @@ class TestCreateParser:
                 "example.com",
                 "--json",
                 "--json-pretty",
+                "--show-chain",
                 "--warn-days",
                 "45",
                 "--critical-days",
@@ -137,6 +138,7 @@ class TestCreateParser:
 
         assert args.json is True
         assert args.json_pretty is True
+        assert args.show_chain is True
         assert args.warn_days == 45
         assert args.critical_days == 10
         assert args.timeout == 3.5

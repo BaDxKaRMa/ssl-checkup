@@ -43,6 +43,7 @@ def get_certificate(
     insecure: bool = False,
     timeout: float = 10.0,
     ip_version: str = "auto",
+    include_chain: bool = False,
 ) -> Union[str, Dict[str, Any]]:
     """
     Retrieve SSL certificate from a remote server.
@@ -72,6 +73,44 @@ def get_certificate(
             der_cert = ssock.getpeercert(binary_form=True)
             pem_cert = ssl.DER_cert_to_PEM_cert(der_cert) if der_cert else ""
             cert = ssock.getpeercert()
+            chain_pem: list[str] = []
+            chain_source: str | None = None
+
+            if include_chain:
+                try:
+                    chain_der: list[bytes] = []
+                    if not insecure and hasattr(ssock, "get_verified_chain"):
+                        verified_chain = ssock.get_verified_chain()
+                        chain_der = (
+                            [
+                                der
+                                for der in verified_chain
+                                if isinstance(der, (bytes, bytearray))
+                            ]
+                            if verified_chain
+                            else []
+                        )
+                        chain_source = "verified"
+                    elif hasattr(ssock, "get_unverified_chain"):
+                        unverified_chain = ssock.get_unverified_chain()
+                        chain_der = (
+                            [
+                                der
+                                for der in unverified_chain
+                                if isinstance(der, (bytes, bytearray))
+                            ]
+                            if unverified_chain
+                            else []
+                        )
+                        chain_source = "unverified"
+
+                    chain_pem = [ssl.DER_cert_to_PEM_cert(der) for der in chain_der]
+                except Exception:  # nosec B110
+                    chain_pem = []
+
+                if not chain_pem and pem_cert:
+                    chain_pem = [pem_cert]
+                    chain_source = chain_source or "leaf-only"
 
             if pem:
                 return pem_cert or ""
@@ -82,4 +121,6 @@ def get_certificate(
                 "resolved_ip": resolved_ip,
                 "tls_version": tls_version,
                 "cipher": cipher,
+                "chain_pem": chain_pem,
+                "chain_source": chain_source,
             }

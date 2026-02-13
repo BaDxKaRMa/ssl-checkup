@@ -93,6 +93,7 @@ ssl-checkup [OPTIONS] WEBSITE[:PORT]
 | `--json`             | Output certificate data as JSON                            |
 | `--json-pretty`      | Pretty-print JSON output (requires `--json`)               |
 | `-p`, `--print-cert` | Print the PEM certificate to stdout                        |
+| `--show-chain`       | Include certificate chain details in output                |
 | `--debug`            | Enable debug output for troubleshooting                    |
 | `-i`, `--issuer`     | Print only the certificate issuer                          |
 | `-s`, `--subject`    | Print only the certificate subject                         |
@@ -148,6 +149,7 @@ ssl-checkup --no-color example.com > info.txt  # Plain text output
 ```bash
 ssl-checkup --json example.com
 ssl-checkup --json --json-pretty example.com
+ssl-checkup --json --show-chain example.com
 ssl-checkup --warn-days 30 --critical-days 7 example.com
 ```
 
@@ -171,6 +173,8 @@ JSON schema (stable fields):
 | `checked_at`     | string                | UTC timestamp in ISO-8601 format |
 | `warning_days`   | integer               | Effective warning threshold |
 | `critical_days`  | integer               | Effective critical threshold |
+| `chain_source`   | string \| null        | Chain source: `verified`, `unverified`, or `leaf-only` |
+| `chain`          | array[object]         | Present with `--show-chain`; includes `index`, `is_leaf`, `subject`, `issuer`, `not_before`, `not_after` |
 | `status`         | string                | Present in policy mode: `valid`, `warning`, `critical`, `expired` |
 | `days_left`      | integer               | Present in policy mode |
 

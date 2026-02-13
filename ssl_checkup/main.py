@@ -122,6 +122,49 @@ def _hostname_matches(cert: Dict[str, Any], hostname: str) -> bool:
     return False
 
 
+def _build_chain_summary(chain_pem: list[str]) -> list[Dict[str, Any]]:
+    """Build certificate chain summary entries from PEM data."""
+    summary: list[Dict[str, Any]] = []
+    for index, pem_data in enumerate(chain_pem):
+        parsed = parse_pem_cert(pem_data)
+        entry: Dict[str, Any] = {
+            "index": index,
+            "is_leaf": index == 0,
+            "subject": None,
+            "issuer": None,
+            "not_before": None,
+            "not_after": None,
+        }
+        if parsed:
+            entry["subject"] = get_subject_cn(parsed)
+            entry["issuer"] = get_issuer_org(parsed)
+            entry["not_before"] = parsed.get("notBefore")
+            entry["not_after"] = parsed.get("notAfter")
+        summary.append(entry)
+    return summary
+
+
+def _print_chain_summary(chain: list[Dict[str, Any]], source: str | None) -> None:
+    """Print certificate chain summary for human-readable output."""
+    if not chain:
+        print("  Chain: unavailable")
+        return
+
+    heading = "Certificate Chain"
+    if source:
+        heading += f" ({source})"
+    print(f"  {heading}:")
+    for entry in chain:
+        role = "leaf" if entry.get("is_leaf") else "intermediate/root"
+        subject = entry.get("subject") or "N/A"
+        issuer = entry.get("issuer") or "N/A"
+        not_after = entry.get("not_after") or "N/A"
+        print(
+            f"    - [{entry.get('index')}] {role} | "
+            f"subject={subject} | issuer={issuer} | not_after={not_after}"
+        )
+
+
 def _calculate_status(
     cert: Dict[str, Any], warn_days: int, critical_days: int
 ) -> Dict[str, Any]:
@@ -229,18 +272,29 @@ def _build_json_result(
         )
         result.update(status_data)
 
+    if _arg(args, "show_chain", False):
+        chain_pem = cert_info.get("chain_pem") or []
+        result["chain_source"] = cert_info.get("chain_source")
+        result["chain"] = _build_chain_summary(chain_pem)
+
     return result
 
 
 def _run_target(hostname: str, port: int, raw_target: str, args: Any) -> Dict[str, Any]:
     """Run one target check and return structured result."""
     try:
+        cert_kwargs: Dict[str, Any] = {
+            "insecure": bool(_arg(args, "insecure", False)),
+            "timeout": float(_arg(args, "timeout", 10.0)),
+            "ip_version": str(_arg(args, "ip_version", "auto")),
+        }
+        if _arg(args, "show_chain", False):
+            cert_kwargs["include_chain"] = True
+
         cert_info = get_certificate(
             hostname,
             port,
-            insecure=bool(_arg(args, "insecure", False)),
-            timeout=float(_arg(args, "timeout", 10.0)),
-            ip_version=str(_arg(args, "ip_version", "auto")),
+            **cert_kwargs,
         )
 
         if not isinstance(cert_info, dict):
@@ -326,6 +380,10 @@ def _print_target_human(
             bool(_arg(args, "insecure", False)),
         )
 
+    if _arg(args, "show_chain", False):
+        chain = result.get("chain") or []
+        _print_chain_summary(chain, result.get("chain_source"))
+
 
 def _batch_exit_code(results: list[Dict[str, Any]], args: Any) -> int:
     """Derive a batch exit code based on errors and status policy."""
@@ -374,14 +432,20 @@ def _run_single(hostname: str, port: int, raw_target: str, args: Any) -> int:
     start_time = time.time() if debug else None
 
     try:
+        cert_kwargs: Dict[str, Any] = {
+            "insecure": bool(_arg(args, "insecure", False)),
+            "timeout": float(_arg(args, "timeout", 10.0)),
+            "ip_version": str(_arg(args, "ip_version", "auto")),
+        }
+        if _arg(args, "show_chain", False):
+            cert_kwargs["include_chain"] = True
+
         if _arg(args, "print_cert", False):
             pem = get_certificate(
                 hostname,
                 port,
                 pem=True,
-                insecure=bool(_arg(args, "insecure", False)),
-                timeout=float(_arg(args, "timeout", 10.0)),
-                ip_version=str(_arg(args, "ip_version", "auto")),
+                **cert_kwargs,
             )
             print(pem)
             return 0
@@ -389,9 +453,7 @@ def _run_single(hostname: str, port: int, raw_target: str, args: Any) -> int:
         cert_info = get_certificate(
             hostname,
             port,
-            insecure=bool(_arg(args, "insecure", False)),
-            timeout=float(_arg(args, "timeout", 10.0)),
-            ip_version=str(_arg(args, "ip_version", "auto")),
+            **cert_kwargs,
         )
 
         if debug and isinstance(cert_info, dict) and debug_formatter:
@@ -453,6 +515,9 @@ def _run_single(hostname: str, port: int, raw_target: str, args: Any) -> int:
                 cert_info.get("pem") if isinstance(cert_info, dict) else None,
                 bool(_arg(args, "insecure", False)),
             )
+            if _arg(args, "show_chain", False) and isinstance(cert_info, dict):
+                chain = _build_chain_summary(cert_info.get("chain_pem") or [])
+                _print_chain_summary(chain, cert_info.get("chain_source"))
 
         if debug and debug_formatter:
             debug_formatter.print_query_analysis(hostname, display_cert)

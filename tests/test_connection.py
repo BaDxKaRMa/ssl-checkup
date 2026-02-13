@@ -207,6 +207,39 @@ class TestGetCertificate:
         with pytest.raises(socket.gaierror):
             get_certificate("invalid.hostname.that.does.not.exist", 443)
 
+    @patch("ssl_checkup.connection.socket.create_connection")
+    @patch("ssl_checkup.connection.ssl.create_default_context")
+    def test_get_certificate_include_chain(self, mock_context, mock_socket):
+        """Test certificate retrieval with certificate chain enabled."""
+        mock_sock = Mock()
+        mock_sock.getpeername.return_value = ("192.168.1.1", 443)
+        mock_socket.return_value.__enter__.return_value = mock_sock
+
+        mock_ssl_sock = Mock()
+        mock_ssl_sock.version.return_value = "TLSv1.3"
+        mock_ssl_sock.cipher.return_value = ("TLS_AES_256_GCM_SHA384", "TLSv1.3", 256)
+        mock_ssl_sock.getpeercert.side_effect = [
+            b"mock_der_cert",
+            {"subject": [[("commonName", "example.com")]]},
+        ]
+        mock_ssl_sock.get_verified_chain.return_value = [b"leaf_der", b"issuer_der"]
+
+        mock_ssl_context = Mock()
+        mock_ssl_context.wrap_socket.return_value = MagicMock()
+        mock_ssl_context.wrap_socket.return_value.__enter__.return_value = mock_ssl_sock
+        mock_context.return_value = mock_ssl_context
+
+        with patch("ssl_checkup.connection.ssl.DER_cert_to_PEM_cert") as mock_pem:
+            mock_pem.side_effect = lambda der: (
+                f"-----BEGIN CERTIFICATE-----\n{der.decode()}\n-----END CERTIFICATE-----"
+            )
+
+            result = get_certificate("example.com", 443, include_chain=True)
+
+        assert isinstance(result, dict)
+        assert result["chain_source"] == "verified"
+        assert len(result["chain_pem"]) == 2
+
     @patch("ssl_checkup.connection.socket.getaddrinfo")
     @patch("ssl_checkup.connection.socket.socket")
     @patch("ssl_checkup.connection.ssl.create_default_context")
