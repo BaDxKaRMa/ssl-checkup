@@ -1,9 +1,13 @@
 """Integration tests for ssl-checkup package."""
 
+import json
 import subprocess
 import sys
+from datetime import datetime, timedelta
 from io import StringIO
 from unittest.mock import patch
+
+import pytest
 
 from ssl_checkup.main import main
 
@@ -66,7 +70,13 @@ class TestCliInProcessIntegration:
         with patch.object(sys, "argv", ["ssl-checkup", "example.com"]):
             main()
 
-        mock_get_cert.assert_called_once_with("example.com", 443, insecure=False)
+        mock_get_cert.assert_called_once_with(
+            "example.com",
+            443,
+            insecure=False,
+            timeout=10.0,
+            ip_version="auto",
+        )
 
     @patch("ssl_checkup.main.get_certificate")
     @patch("sys.stdout", new_callable=StringIO)
@@ -142,7 +152,13 @@ class TestCliInProcessIntegration:
         with patch.object(sys, "argv", ["ssl-checkup", "example.com", "--no-color"]):
             main()
 
-        mock_get_cert.assert_called_once_with("example.com", 443, insecure=False)
+        mock_get_cert.assert_called_once_with(
+            "example.com",
+            443,
+            insecure=False,
+            timeout=10.0,
+            ip_version="auto",
+        )
 
     @patch("ssl_checkup.main.get_certificate")
     @patch("sys.stdout", new_callable=StringIO)
@@ -184,7 +200,13 @@ class TestCliInProcessIntegration:
         with patch.object(sys, "argv", ["ssl-checkup", "example.com", "--insecure"]):
             main()
 
-        mock_get_cert.assert_called_once_with("example.com", 443, insecure=True)
+        mock_get_cert.assert_called_once_with(
+            "example.com",
+            443,
+            insecure=True,
+            timeout=10.0,
+            ip_version="auto",
+        )
 
     @patch("sys.stderr", new_callable=StringIO)
     def test_invalid_port_friendly_error(self, mock_stderr):
@@ -196,6 +218,130 @@ class TestCliInProcessIntegration:
                 assert exc.code == 2
 
         assert "Invalid website argument" in mock_stderr.getvalue()
+
+    @patch("ssl_checkup.main.get_certificate")
+    @patch("sys.stdout", new_callable=StringIO)
+    def test_json_output(self, mock_stdout, mock_get_cert):
+        """Test JSON output mode."""
+        future_date = datetime.utcnow() + timedelta(days=60)
+        past_date = datetime.utcnow() - timedelta(days=10)
+        mock_get_cert.return_value = {
+            "cert": {
+                "notAfter": future_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "notBefore": past_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "subject": [[("commonName", "example.com")]],
+                "issuer": [[("organizationName", "Example CA")]],
+                "subjectAltName": [("DNS", "example.com")],
+            },
+            "pem": "",
+            "resolved_ip": "93.184.216.34",
+            "tls_version": "TLSv1.3",
+            "cipher": ("TLS_AES_256_GCM_SHA384", "TLSv1.3", 256),
+        }
+
+        with patch.object(sys, "argv", ["ssl-checkup", "example.com", "--json"]):
+            main()
+
+        payload = json.loads(mock_stdout.getvalue())
+        assert payload["hostname"] == "example.com"
+        assert payload["status"] == "valid"
+        assert payload["days_left"] >= 0
+
+    @patch("ssl_checkup.main.get_certificate")
+    def test_warn_exit_code(self, mock_get_cert):
+        """Test warning threshold exit code."""
+        near_date = datetime.utcnow() + timedelta(days=5)
+        past_date = datetime.utcnow() - timedelta(days=10)
+        mock_get_cert.return_value = {
+            "cert": {
+                "notAfter": near_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "notBefore": past_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "subject": [[("commonName", "example.com")]],
+                "issuer": [[("organizationName", "Example CA")]],
+                "subjectAltName": [("DNS", "example.com")],
+            },
+            "pem": "",
+        }
+
+        with patch.object(
+            sys,
+            "argv",
+            ["ssl-checkup", "example.com", "--warn-days", "10", "--critical-days", "3"],
+        ):
+            with pytest.raises(SystemExit) as exc:
+                main()
+        assert exc.value.code == 1
+
+    @patch("ssl_checkup.main.get_certificate")
+    def test_critical_exit_code(self, mock_get_cert):
+        """Test critical threshold exit code."""
+        near_date = datetime.utcnow() + timedelta(days=1)
+        past_date = datetime.utcnow() - timedelta(days=10)
+        mock_get_cert.return_value = {
+            "cert": {
+                "notAfter": near_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "notBefore": past_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "subject": [[("commonName", "example.com")]],
+                "issuer": [[("organizationName", "Example CA")]],
+                "subjectAltName": [("DNS", "example.com")],
+            },
+            "pem": "",
+        }
+
+        with patch.object(
+            sys,
+            "argv",
+            ["ssl-checkup", "example.com", "--warn-days", "10", "--critical-days", "2"],
+        ):
+            with pytest.raises(SystemExit) as exc:
+                main()
+        assert exc.value.code == 2
+
+    @patch("ssl_checkup.main.get_certificate")
+    @patch("sys.stdout", new_callable=StringIO)
+    def test_batch_input_json(self, mock_stdout, mock_get_cert, tmp_path):
+        """Test batch mode with input file and JSON output."""
+        target_file = tmp_path / "targets.txt"
+        target_file.write_text("example.com\nexample.org:8443\n", encoding="utf-8")
+
+        future_date = datetime.utcnow() + timedelta(days=90)
+        past_date = datetime.utcnow() - timedelta(days=30)
+        mock_get_cert.return_value = {
+            "cert": {
+                "notAfter": future_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "notBefore": past_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "subject": [[("commonName", "example.com")]],
+                "issuer": [[("organizationName", "Example CA")]],
+                "subjectAltName": [("DNS", "example.com")],
+            },
+            "pem": "",
+            "resolved_ip": "93.184.216.34",
+            "tls_version": "TLSv1.3",
+            "cipher": ("TLS_AES_256_GCM_SHA384", "TLSv1.3", 256),
+        }
+
+        with patch.object(
+            sys,
+            "argv",
+            [
+                "ssl-checkup",
+                "--input",
+                str(target_file),
+                "--json",
+                "--workers",
+                "2",
+                "--timeout",
+                "3",
+                "--ip-version",
+                "4",
+            ],
+        ):
+            main()
+
+        payload = json.loads(mock_stdout.getvalue())
+        assert isinstance(payload, list)
+        assert len(payload) == 2
+        assert payload[0]["status"] == "valid"
 
 
 class TestPackageIntegration:

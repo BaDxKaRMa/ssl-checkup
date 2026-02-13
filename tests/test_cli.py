@@ -109,6 +109,41 @@ class TestCreateParser:
         with pytest.raises(SystemExit):
             parser.parse_args(["example.com", "--print-cert", "--san"])
 
+        with pytest.raises(SystemExit):
+            parser.parse_args(["example.com", "--json", "--issuer"])
+
+    def test_extended_flags(self):
+        """Test new CLI flags."""
+        parser = create_parser()
+        args = parser.parse_args(
+            [
+                "example.com",
+                "--json",
+                "--json-pretty",
+                "--warn-days",
+                "45",
+                "--critical-days",
+                "10",
+                "--timeout",
+                "3.5",
+                "--ip-version",
+                "4",
+                "--workers",
+                "8",
+                "--input",
+                "hosts.txt",
+            ]
+        )
+
+        assert args.json is True
+        assert args.json_pretty is True
+        assert args.warn_days == 45
+        assert args.critical_days == 10
+        assert args.timeout == 3.5
+        assert args.ip_version == "4"
+        assert args.workers == 8
+        assert args.input == "hosts.txt"
+
 
 class TestParseWebsiteArg:
     """Test website argument parsing."""
@@ -186,6 +221,13 @@ class TestValidateArgs:
         """Test validation fails when no website provided."""
         args = Mock()
         args.website = None
+        args.input = None
+        args.json_pretty = False
+        args.json = False
+        args.workers = 4
+        args.warn_days = 30
+        args.critical_days = 7
+        args.timeout = 10.0
 
         parser = Mock()
 
@@ -198,6 +240,13 @@ class TestValidateArgs:
         """Test validation passes when website provided."""
         args = Mock()
         args.website = "example.com"
+        args.input = None
+        args.json_pretty = False
+        args.json = False
+        args.workers = 4
+        args.warn_days = 30
+        args.critical_days = 7
+        args.timeout = 10.0
 
         parser = Mock()
 
@@ -205,6 +254,39 @@ class TestValidateArgs:
         validate_args(args, parser)
 
         parser.print_help.assert_not_called()
+
+    def test_validate_args_with_input_only(self):
+        """Test validation passes with input file only."""
+        args = Mock()
+        args.website = None
+        args.input = "targets.txt"
+        args.json_pretty = False
+        args.json = False
+        args.workers = 4
+        args.warn_days = 30
+        args.critical_days = 7
+        args.timeout = 10.0
+
+        parser = Mock()
+        validate_args(args, parser)
+        parser.print_help.assert_not_called()
+
+    def test_validate_args_json_pretty_requires_json(self):
+        """Test --json-pretty validation."""
+        args = Mock()
+        args.website = "example.com"
+        args.input = None
+        args.json_pretty = True
+        args.json = False
+        args.workers = 4
+        args.warn_days = 30
+        args.critical_days = 7
+        args.timeout = 10.0
+
+        parser = Mock()
+
+        validate_args(args, parser)
+        parser.error.assert_called_once()
 
 
 class TestIntegration:

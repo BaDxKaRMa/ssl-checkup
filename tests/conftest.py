@@ -91,10 +91,13 @@ JQ7xXI8JQd8BFNFG4l7+3t3qQZ8YGJr0n8aHX8i6mB3YfPg+N+LQPJ8=
 @pytest.fixture
 def mock_cert_info() -> Dict[str, Any]:
     """Mock certificate info from connection."""
+    future_date = datetime.utcnow() + timedelta(days=90)
+    past_date = datetime.utcnow() - timedelta(days=30)
+
     return {
         "cert": {
-            "notAfter": "Dec 15 23:59:59 2024 GMT",
-            "notBefore": "Sep 15 00:00:00 2024 GMT",
+            "notAfter": future_date.strftime("%b %d %H:%M:%S %Y GMT"),
+            "notBefore": past_date.strftime("%b %d %H:%M:%S %Y GMT"),
             "subject": [[("commonName", "example.com")]],
             "issuer": [[("organizationName", "Example CA")]],
             "subjectAltName": [("DNS", "example.com"), ("DNS", "www.example.com")],

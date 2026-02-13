@@ -25,6 +25,18 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--input",
+        help="Read additional targets from file ('-' to read from stdin)",
+    )
+
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="Number of concurrent workers for --input mode (default: 4)",
+    )
+
+    parser.add_argument(
         "--insecure",
         "-k",
         action="store_true",
@@ -39,6 +51,40 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument("--no-color", action="store_true", help="Disable color output")
+
+    parser.add_argument(
+        "--json-pretty",
+        action="store_true",
+        help="Pretty-print JSON output (requires --json)",
+    )
+
+    parser.add_argument(
+        "--warn-days",
+        type=int,
+        default=30,
+        help="Warning threshold in days before expiry (default: 30)",
+    )
+
+    parser.add_argument(
+        "--critical-days",
+        type=int,
+        default=7,
+        help="Critical threshold in days before expiry (default: 7)",
+    )
+
+    parser.add_argument(
+        "--timeout",
+        type=float,
+        default=10.0,
+        help="Socket timeout in seconds (default: 10)",
+    )
+
+    parser.add_argument(
+        "--ip-version",
+        choices=["auto", "4", "6"],
+        default="auto",
+        help="Prefer IPv4 or IPv6 when connecting (default: auto)",
+    )
 
     output_mode_group = parser.add_mutually_exclusive_group()
 
@@ -68,6 +114,11 @@ def create_parser() -> argparse.ArgumentParser:
         "--san",
         action="store_true",
         help="Print only the Subject Alternative Names (SANs)",
+    )
+    output_mode_group.add_argument(
+        "--json",
+        action="store_true",
+        help="Output certificate data as JSON",
     )
 
     return parser
@@ -144,6 +195,24 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
         args: Parsed arguments
         parser: Argument parser instance
     """
-    if not args.website:
+    if not args.website and not getattr(args, "input", None):
         parser.print_help()
         sys.exit(1)
+
+    if getattr(args, "json_pretty", False) and not getattr(args, "json", False):
+        parser.error("--json-pretty requires --json")
+
+    if getattr(args, "workers", 1) < 1:
+        parser.error("--workers must be at least 1")
+
+    if getattr(args, "warn_days", 0) < 0:
+        parser.error("--warn-days must be >= 0")
+
+    if getattr(args, "critical_days", 0) < 0:
+        parser.error("--critical-days must be >= 0")
+
+    if getattr(args, "critical_days", 0) > getattr(args, "warn_days", 0):
+        parser.error("--critical-days cannot be greater than --warn-days")
+
+    if getattr(args, "timeout", 0.0) <= 0:
+        parser.error("--timeout must be > 0")
