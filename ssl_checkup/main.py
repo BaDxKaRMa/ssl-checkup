@@ -8,7 +8,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 from .cli import create_parser, handle_version_check, parse_website_arg, validate_args
 from .connection import get_certificate
@@ -196,6 +196,45 @@ def _status_to_exit_code(status: str) -> int:
     return 0
 
 
+def _is_retryable_error(exc: Exception) -> bool:
+    """Determine whether a connection error should be retried."""
+    if isinstance(exc, socket.gaierror):
+        return False
+    if isinstance(exc, ssl.SSLError):
+        return "CERTIFICATE_VERIFY_FAILED" not in str(exc)
+    return isinstance(exc, (socket.timeout, TimeoutError, OSError, ConnectionError))
+
+
+def _get_certificate_with_retries(
+    hostname: str,
+    port: int,
+    args: Any,
+    pem: bool = False,
+    **cert_kwargs: Any,
+) -> Union[str, Dict[str, Any]]:
+    """Fetch certificate data with optional retries for transient failures."""
+    retries = int(_arg(args, "retries", 0))
+    retry_delay = float(_arg(args, "retry_delay", 0.5))
+    attempt = 0
+
+    while True:
+        try:
+            if pem:
+                return get_certificate(hostname, port, pem=True, **cert_kwargs)
+            return get_certificate(hostname, port, **cert_kwargs)
+        except Exception as exc:
+            if attempt >= retries or not _is_retryable_error(exc):
+                raise
+            attempt += 1
+            if _arg(args, "debug", False):
+                print(
+                    f"[DEBUG] Retry {attempt}/{retries} after error: {exc}",
+                    file=sys.stderr,
+                )
+            if retry_delay > 0:
+                time.sleep(retry_delay)
+
+
 def _iter_input_targets(input_path: str) -> list[str]:
     """Read raw targets from input source."""
     if input_path == "-":
@@ -291,9 +330,10 @@ def _run_target(hostname: str, port: int, raw_target: str, args: Any) -> Dict[st
         if _arg(args, "show_chain", False):
             cert_kwargs["include_chain"] = True
 
-        cert_info = get_certificate(
+        cert_info = _get_certificate_with_retries(
             hostname,
             port,
+            args,
             **cert_kwargs,
         )
 
@@ -441,18 +481,20 @@ def _run_single(hostname: str, port: int, raw_target: str, args: Any) -> int:
             cert_kwargs["include_chain"] = True
 
         if _arg(args, "print_cert", False):
-            pem = get_certificate(
+            pem = _get_certificate_with_retries(
                 hostname,
                 port,
+                args,
                 pem=True,
                 **cert_kwargs,
             )
             print(pem)
             return 0
 
-        cert_info = get_certificate(
+        cert_info = _get_certificate_with_retries(
             hostname,
             port,
+            args,
             **cert_kwargs,
         )
 

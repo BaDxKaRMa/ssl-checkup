@@ -101,6 +101,8 @@ ssl-checkup [OPTIONS] WEBSITE[:PORT]
 | `--warn-days N`      | Warning threshold in days before expiry (default: 30)      |
 | `--critical-days N`  | Critical threshold in days before expiry (default: 7)      |
 | `--timeout SEC`      | Connection timeout in seconds (default: 10)                |
+| `--retries N`        | Retry attempts for transient network errors (default: 0)   |
+| `--retry-delay SEC`  | Delay between retry attempts (default: 0.5)                |
 | `--ip-version`       | `auto`, `4`, or `6` network family preference              |
 | `--input FILE`       | Read targets from file (`-` reads from stdin)              |
 | `--workers N`        | Worker threads for batch mode (`--input`)                  |
@@ -150,6 +152,7 @@ ssl-checkup --no-color example.com > info.txt  # Plain text output
 ssl-checkup --json example.com
 ssl-checkup --json --json-pretty example.com
 ssl-checkup --json --show-chain example.com
+ssl-checkup --retries 2 --retry-delay 1.0 example.com
 ssl-checkup --warn-days 30 --critical-days 7 example.com
 ```
 

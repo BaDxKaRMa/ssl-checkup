@@ -1,6 +1,7 @@
 """Integration tests for ssl-checkup package."""
 
 import json
+import socket
 import subprocess
 import sys
 from datetime import datetime, timedelta
@@ -381,6 +382,62 @@ class TestCliInProcessIntegration:
         payload = json.loads(mock_stdout.getvalue())
         assert payload["chain_source"] == "verified"
         assert len(payload["chain"]) == 2
+
+    @patch("ssl_checkup.main.get_certificate")
+    @patch("sys.stdout", new_callable=StringIO)
+    def test_retries_succeed_after_transient_failure(self, _mock_stdout, mock_get_cert):
+        """Test retry behavior for transient connection failures."""
+        future_date = datetime.utcnow() + timedelta(days=60)
+        past_date = datetime.utcnow() - timedelta(days=10)
+        mock_get_cert.side_effect = [
+            socket.timeout("timed out"),
+            {
+                "cert": {
+                    "notAfter": future_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                    "notBefore": past_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                    "subject": [[("commonName", "example.com")]],
+                    "issuer": [[("organizationName", "Example CA")]],
+                    "subjectAltName": [("DNS", "example.com")],
+                },
+                "pem": "",
+                "resolved_ip": "93.184.216.34",
+                "tls_version": "TLSv1.3",
+                "cipher": ("TLS_AES_256_GCM_SHA384", "TLSv1.3", 256),
+            },
+        ]
+
+        with patch.object(
+            sys,
+            "argv",
+            [
+                "ssl-checkup",
+                "example.com",
+                "--json",
+                "--retries",
+                "1",
+                "--retry-delay",
+                "0",
+            ],
+        ):
+            main()
+
+        assert mock_get_cert.call_count == 2
+
+    @patch("ssl_checkup.main.get_certificate")
+    def test_retries_exhausted(self, mock_get_cert):
+        """Test behavior when retries are exhausted."""
+        mock_get_cert.side_effect = socket.timeout("timed out")
+
+        with patch.object(
+            sys,
+            "argv",
+            ["ssl-checkup", "example.com", "--retries", "1", "--retry-delay", "0"],
+        ):
+            with pytest.raises(SystemExit) as exc:
+                main()
+
+        assert exc.value.code == 12
+        assert mock_get_cert.call_count == 2
 
 
 class TestPackageIntegration:

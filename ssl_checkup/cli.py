@@ -80,6 +80,20 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--retries",
+        type=int,
+        default=0,
+        help="Number of retry attempts for transient network failures (default: 0)",
+    )
+
+    parser.add_argument(
+        "--retry-delay",
+        type=float,
+        default=0.5,
+        help="Delay in seconds between retry attempts (default: 0.5)",
+    )
+
+    parser.add_argument(
         "--ip-version",
         choices=["auto", "4", "6"],
         default="auto",
@@ -222,3 +236,9 @@ def validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
 
     if getattr(args, "timeout", 0.0) <= 0:
         parser.error("--timeout must be > 0")
+
+    if getattr(args, "retries", 0) < 0:
+        parser.error("--retries must be >= 0")
+
+    if getattr(args, "retry_delay", 0.0) < 0:
+        parser.error("--retry-delay must be >= 0")

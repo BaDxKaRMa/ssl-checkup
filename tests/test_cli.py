@@ -127,6 +127,10 @@ class TestCreateParser:
                 "10",
                 "--timeout",
                 "3.5",
+                "--retries",
+                "2",
+                "--retry-delay",
+                "0.25",
                 "--ip-version",
                 "4",
                 "--workers",
@@ -142,6 +146,8 @@ class TestCreateParser:
         assert args.warn_days == 45
         assert args.critical_days == 10
         assert args.timeout == 3.5
+        assert args.retries == 2
+        assert args.retry_delay == 0.25
         assert args.ip_version == "4"
         assert args.workers == 8
         assert args.input == "hosts.txt"
@@ -230,6 +236,8 @@ class TestValidateArgs:
         args.warn_days = 30
         args.critical_days = 7
         args.timeout = 10.0
+        args.retries = 0
+        args.retry_delay = 0.5
 
         parser = Mock()
 
@@ -249,6 +257,8 @@ class TestValidateArgs:
         args.warn_days = 30
         args.critical_days = 7
         args.timeout = 10.0
+        args.retries = 0
+        args.retry_delay = 0.5
 
         parser = Mock()
 
@@ -268,6 +278,8 @@ class TestValidateArgs:
         args.warn_days = 30
         args.critical_days = 7
         args.timeout = 10.0
+        args.retries = 0
+        args.retry_delay = 0.5
 
         parser = Mock()
         validate_args(args, parser)
@@ -284,6 +296,27 @@ class TestValidateArgs:
         args.warn_days = 30
         args.critical_days = 7
         args.timeout = 10.0
+        args.retries = 0
+        args.retry_delay = 0.5
+
+        parser = Mock()
+
+        validate_args(args, parser)
+        parser.error.assert_called_once()
+
+    def test_validate_args_invalid_retries(self):
+        """Test --retries validation."""
+        args = Mock()
+        args.website = "example.com"
+        args.input = None
+        args.json_pretty = False
+        args.json = False
+        args.workers = 4
+        args.warn_days = 30
+        args.critical_days = 7
+        args.timeout = 10.0
+        args.retries = -1
+        args.retry_delay = 0.5
 
         parser = Mock()
 
