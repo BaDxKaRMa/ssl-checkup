@@ -1,6 +1,6 @@
 """SSL Certificate Checker - A robust SSL/TLS certificate inspection tool."""
 
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 
 
 def main() -> None:

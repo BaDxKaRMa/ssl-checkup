@@ -353,7 +353,7 @@ class TestPackageIntegration:
 
         assert hasattr(ssl_checkup, "main")
         assert hasattr(ssl_checkup, "__version__")
-        assert ssl_checkup.__version__ == "1.0.2"
+        assert ssl_checkup.__version__ == "1.1.0"
 
     def test_module_execution(self):
         """Test that the module can be executed with -m flag."""
