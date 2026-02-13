@@ -215,7 +215,7 @@ make release-push VERSION=1.1.0
 **Option 2: Manual Process**
 ```bash
 # 1. Update version in pyproject.toml
-version = "1.1.0"
+version = "1.1.1"
 
 # 2. Commit and tag the release
 git add pyproject.toml
