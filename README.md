@@ -106,6 +106,8 @@ ssl-checkup [OPTIONS] WEBSITE[:PORT]
 | `--ip-version`       | `auto`, `4`, or `6` network family preference              |
 | `--input FILE`       | Read targets from file (`-` reads from stdin)              |
 | `--workers N`        | Worker threads for batch mode (`--input`)                  |
+| `--summary`          | Show aggregate summary counts for batch runs               |
+| `--fail-fast`        | Stop batch processing on first non-success result          |
 | `--insecure`, `-k`   | Allow insecure connections (bypass certificate validation) |
 | `--version`          | Show version and exit                                      |
 | `-h`, `--help`       | Show help message                                          |
@@ -154,6 +156,7 @@ ssl-checkup --json --json-pretty example.com
 ssl-checkup --json --show-chain example.com
 ssl-checkup --retries 2 --retry-delay 1.0 example.com
 ssl-checkup --warn-days 30 --critical-days 7 example.com
+ssl-checkup --input targets.txt --json --summary
 ```
 
 JSON schema (stable fields):
@@ -180,6 +183,10 @@ JSON schema (stable fields):
 | `chain`          | array[object]         | Present with `--show-chain`; includes `index`, `is_leaf`, `subject`, `issuer`, `not_before`, `not_after` |
 | `status`         | string                | Present in policy mode: `valid`, `warning`, `critical`, `expired` |
 | `days_left`      | integer               | Present in policy mode |
+
+When `--summary` is used with `--json`, output becomes:
+- `results`: array of per-target objects
+- `summary`: aggregate counts (`total`, `valid`, `warning`, `critical`, `expired`, `errors`)
 
 Exit codes in policy mode:
 - `0` valid

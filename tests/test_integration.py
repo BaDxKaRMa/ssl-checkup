@@ -349,6 +349,67 @@ class TestCliInProcessIntegration:
 
     @patch("ssl_checkup.main.get_certificate")
     @patch("sys.stdout", new_callable=StringIO)
+    def test_batch_input_json_with_summary(self, mock_stdout, mock_get_cert, tmp_path):
+        """Test batch mode JSON summary output."""
+        target_file = tmp_path / "targets.txt"
+        target_file.write_text("example.com\nexample.org:8443\n", encoding="utf-8")
+
+        future_date = datetime.utcnow() + timedelta(days=90)
+        past_date = datetime.utcnow() - timedelta(days=30)
+        mock_get_cert.return_value = {
+            "cert": {
+                "notAfter": future_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "notBefore": past_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "subject": [[("commonName", "example.com")]],
+                "issuer": [[("organizationName", "Example CA")]],
+                "subjectAltName": [("DNS", "example.com")],
+            },
+            "pem": "",
+            "resolved_ip": "93.184.216.34",
+            "tls_version": "TLSv1.3",
+            "cipher": ("TLS_AES_256_GCM_SHA384", "TLSv1.3", 256),
+        }
+
+        with patch.object(
+            sys,
+            "argv",
+            [
+                "ssl-checkup",
+                "--input",
+                str(target_file),
+                "--json",
+                "--summary",
+            ],
+        ):
+            main()
+
+        payload = json.loads(mock_stdout.getvalue())
+        assert "results" in payload
+        assert "summary" in payload
+        assert payload["summary"]["total"] == 2
+        assert payload["summary"]["errors"] == 0
+
+    @patch("ssl_checkup.main.get_certificate")
+    def test_batch_fail_fast_stops_on_first_error(self, mock_get_cert, tmp_path):
+        """Test --fail-fast stops processing after first failure."""
+        target_file = tmp_path / "targets.txt"
+        target_file.write_text("example.com\nexample.org:8443\n", encoding="utf-8")
+
+        mock_get_cert.side_effect = socket.timeout("timed out")
+
+        with patch.object(
+            sys,
+            "argv",
+            ["ssl-checkup", "--input", str(target_file), "--fail-fast"],
+        ):
+            with pytest.raises(SystemExit) as exc:
+                main()
+
+        assert exc.value.code == 10
+        assert mock_get_cert.call_count == 1
+
+    @patch("ssl_checkup.main.get_certificate")
+    @patch("sys.stdout", new_callable=StringIO)
     def test_json_output_with_chain(self, mock_stdout, mock_get_cert):
         """Test JSON output with certificate chain summary."""
         future_date = datetime.utcnow() + timedelta(days=60)

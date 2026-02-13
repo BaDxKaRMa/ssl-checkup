@@ -37,6 +37,18 @@ def create_parser() -> argparse.ArgumentParser:
     )
 
     parser.add_argument(
+        "--summary",
+        action="store_true",
+        help="Print aggregate summary counts for batch runs",
+    )
+
+    parser.add_argument(
+        "--fail-fast",
+        action="store_true",
+        help="Stop batch processing on first non-success result",
+    )
+
+    parser.add_argument(
         "--insecure",
         "-k",
         action="store_true",

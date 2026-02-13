@@ -440,26 +440,96 @@ def _batch_exit_code(results: list[Dict[str, Any]], args: Any) -> int:
     return worst
 
 
+def _result_exit_code(result: Dict[str, Any], args: Any) -> int:
+    """Compute exit code contribution for a single result."""
+    if result.get("error"):
+        return EXIT_OPERATIONAL_ERROR
+    if not _is_policy_mode(args):
+        return 0
+    return _status_to_exit_code(result.get("status", STATUS_VALID))
+
+
+def _build_batch_summary(results: list[Dict[str, Any]], args: Any) -> Dict[str, int]:
+    """Build aggregate summary stats for batch results."""
+    summary = {
+        "total": len(results),
+        "valid": 0,
+        "warning": 0,
+        "critical": 0,
+        "expired": 0,
+        "errors": 0,
+    }
+
+    for result in results:
+        if result.get("error"):
+            summary["errors"] += 1
+            continue
+
+        if _is_policy_mode(args):
+            status = result.get("status", STATUS_VALID)
+            if status in summary:
+                summary[status] += 1
+            else:
+                summary["valid"] += 1
+        else:
+            summary["valid"] += 1
+
+    return summary
+
+
+def _print_batch_summary(summary: Dict[str, int]) -> None:
+    """Print aggregate summary stats for human-readable batch output."""
+    print("Batch Summary:")
+    print(
+        "  "
+        f"total={summary['total']} "
+        f"valid={summary['valid']} "
+        f"warning={summary['warning']} "
+        f"critical={summary['critical']} "
+        f"expired={summary['expired']} "
+        f"errors={summary['errors']}"
+    )
+
+
 def _run_batch(targets: list[tuple[str, int, str]], args: Any) -> int:
     """Run checks for all targets using thread pool."""
-    workers = int(_arg(args, "workers", 4))
-    with ThreadPoolExecutor(max_workers=workers) as executor:
-        futures = [
-            executor.submit(_run_target, hostname, port, raw_target, args)
-            for hostname, port, raw_target in targets
-        ]
-        results = [future.result() for future in futures]
+    fail_fast = bool(_arg(args, "fail_fast", False))
+    results: list[Dict[str, Any]] = []
+
+    if fail_fast:
+        for hostname, port, raw_target in targets:
+            result = _run_target(hostname, port, raw_target, args)
+            results.append(result)
+            if _result_exit_code(result, args) != 0:
+                break
+    else:
+        workers = int(_arg(args, "workers", 4))
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = [
+                executor.submit(_run_target, hostname, port, raw_target, args)
+                for hostname, port, raw_target in targets
+            ]
+            results = [future.result() for future in futures]
+
+    summary = _build_batch_summary(results, args)
 
     if _arg(args, "json", False):
         payload: Any = results
         if len(results) == 1 and not _arg(args, "input", None):
             payload = results[0]
+        if _arg(args, "summary", False):
+            if isinstance(payload, list):
+                payload = {"results": payload, "summary": summary}
+            else:
+                payload = {"results": [payload], "summary": summary}
         _print_json(payload, pretty=bool(_arg(args, "json_pretty", False)))
     else:
         for index, result in enumerate(results):
             _print_target_human(result, args, is_batch=len(results) > 1)
             if len(results) > 1 and index < len(results) - 1:
                 print()
+        if _arg(args, "summary", False):
+            _print_batch_summary(summary)
 
     return _batch_exit_code(results, args)
 

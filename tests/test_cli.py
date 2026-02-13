@@ -137,6 +137,8 @@ class TestCreateParser:
                 "8",
                 "--input",
                 "hosts.txt",
+                "--summary",
+                "--fail-fast",
             ]
         )
 
@@ -151,6 +153,8 @@ class TestCreateParser:
         assert args.ip_version == "4"
         assert args.workers == 8
         assert args.input == "hosts.txt"
+        assert args.summary is True
+        assert args.fail_fast is True
 
 
 class TestParseWebsiteArg:
