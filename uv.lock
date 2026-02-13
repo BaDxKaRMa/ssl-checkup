@@ -911,16 +911,33 @@ wheels = [
 
 [[package]]
 name = "ssl-checkup"
-version = "1.0.1"
+version = "1.1.1"
 source = { editable = "." }
-dependencies = [
+
+[package.optional-dependencies]
+color = [
+    { name = "termcolor" },
+]
+crypto = [
+    { name = "cryptography" },
+]
+dev = [
+    { name = "bandit" },
+    { name = "black" },
+    { name = "build" },
+    { name = "flake8" },
+    { name = "mypy" },
+    { name = "twine" },
+]
+full = [
     { name = "cryptography" },
     { name = "termcolor" },
 ]
-
-[package.optional-dependencies]
-full = [
-    { name = "cryptography" },
+test = [
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "responses" },
 ]
 
 [package.dev-dependencies]
@@ -939,11 +956,22 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "cryptography", specifier = ">=45.0.5" },
-    { name = "cryptography", marker = "extra == 'full'", specifier = ">=3.0.0" },
-    { name = "termcolor", specifier = ">=3.1.0" },
+    { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.8.6" },
+    { name = "black", marker = "extra == 'dev'", specifier = ">=24.0.0" },
+    { name = "build", marker = "extra == 'dev'", specifier = ">=1.2.2.post1" },
+    { name = "cryptography", marker = "extra == 'crypto'", specifier = ">=45.0.5" },
+    { name = "cryptography", marker = "extra == 'full'", specifier = ">=45.0.5" },
+    { name = "flake8", marker = "extra == 'dev'", specifier = ">=7.3.0" },
+    { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.17.0" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=7.0.0" },
+    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=4.0.0" },
+    { name = "pytest-mock", marker = "extra == 'test'", specifier = ">=3.10.0" },
+    { name = "responses", marker = "extra == 'test'", specifier = ">=0.23.0" },
+    { name = "termcolor", marker = "extra == 'color'", specifier = ">=3.1.0" },
+    { name = "termcolor", marker = "extra == 'full'", specifier = ">=3.1.0" },
+    { name = "twine", marker = "extra == 'dev'", specifier = ">=6.1.0" },
 ]
-provides-extras = ["full"]
+provides-extras = ["color", "crypto", "full", "test", "dev"]
 
 [package.metadata.requires-dev]
 dev = [
