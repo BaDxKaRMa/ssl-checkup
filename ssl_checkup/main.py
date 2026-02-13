@@ -1,5 +1,6 @@
 """Main application logic and entry point."""
 
+import contextlib
 import json
 import ipaddress
 import socket
@@ -678,11 +679,22 @@ def main() -> None:
     if not targets:
         parser.error("No valid targets were provided")
 
-    if len(targets) == 1 and not _arg(args, "input", None):
-        hostname, port, raw_target = targets[0]
-        exit_code = _run_single(hostname, port, raw_target, args)
+    def run_checks() -> int:
+        if len(targets) == 1 and not _arg(args, "input", None):
+            hostname, port, raw_target = targets[0]
+            return _run_single(hostname, port, raw_target, args)
+        return _run_batch(targets, args)
+
+    output_path = _arg(args, "output", None)
+    if output_path and output_path != "-":
+        try:
+            with open(output_path, "w", encoding="utf-8") as output_file:
+                with contextlib.redirect_stdout(output_file):
+                    exit_code = run_checks()
+        except OSError as exc:
+            parser.error(f"Could not open output file '{output_path}': {exc}")
     else:
-        exit_code = _run_batch(targets, args)
+        exit_code = run_checks()
 
     if exit_code != 0:
         sys.exit(exit_code)

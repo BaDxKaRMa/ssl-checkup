@@ -65,6 +65,11 @@ def create_parser() -> argparse.ArgumentParser:
     parser.add_argument("--no-color", action="store_true", help="Disable color output")
 
     parser.add_argument(
+        "--output",
+        help="Write output to file instead of stdout ('-' keeps stdout)",
+    )
+
+    parser.add_argument(
         "--json-pretty",
         action="store_true",
         help="Pretty-print JSON output (requires --json)",

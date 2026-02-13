@@ -500,6 +500,37 @@ class TestCliInProcessIntegration:
         assert exc.value.code == 12
         assert mock_get_cert.call_count == 2
 
+    @patch("ssl_checkup.main.get_certificate")
+    def test_output_file_json(self, mock_get_cert, tmp_path):
+        """Test writing JSON output directly to a file."""
+        future_date = datetime.utcnow() + timedelta(days=60)
+        past_date = datetime.utcnow() - timedelta(days=10)
+        mock_get_cert.return_value = {
+            "cert": {
+                "notAfter": future_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "notBefore": past_date.strftime("%b %d %H:%M:%S %Y GMT"),
+                "subject": [[("commonName", "example.com")]],
+                "issuer": [[("organizationName", "Example CA")]],
+                "subjectAltName": [("DNS", "example.com")],
+            },
+            "pem": "",
+            "resolved_ip": "93.184.216.34",
+            "tls_version": "TLSv1.3",
+            "cipher": ("TLS_AES_256_GCM_SHA384", "TLSv1.3", 256),
+        }
+
+        output_file = tmp_path / "report.json"
+        with patch.object(
+            sys,
+            "argv",
+            ["ssl-checkup", "example.com", "--json", "--output", str(output_file)],
+        ):
+            main()
+
+        payload = json.loads(output_file.read_text(encoding="utf-8"))
+        assert payload["hostname"] == "example.com"
+        assert payload["status"] == "valid"
+
 
 class TestPackageIntegration:
     """Integration tests for package functionality."""

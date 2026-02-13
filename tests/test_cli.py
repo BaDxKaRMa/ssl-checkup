@@ -139,6 +139,8 @@ class TestCreateParser:
                 "hosts.txt",
                 "--summary",
                 "--fail-fast",
+                "--output",
+                "report.json",
             ]
         )
 
@@ -155,6 +157,7 @@ class TestCreateParser:
         assert args.input == "hosts.txt"
         assert args.summary is True
         assert args.fail_fast is True
+        assert args.output == "report.json"
 
 
 class TestParseWebsiteArg:

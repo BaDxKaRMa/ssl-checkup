@@ -92,6 +92,7 @@ ssl-checkup [OPTIONS] WEBSITE[:PORT]
 | `--no-color`         | Disable color output for plain text                        |
 | `--json`             | Output certificate data as JSON                            |
 | `--json-pretty`      | Pretty-print JSON output (requires `--json`)               |
+| `--output FILE`      | Write output to a file (`-` keeps stdout)                  |
 | `-p`, `--print-cert` | Print the PEM certificate to stdout                        |
 | `--show-chain`       | Include certificate chain details in output                |
 | `--debug`            | Enable debug output for troubleshooting                    |
@@ -157,6 +158,7 @@ ssl-checkup --json --show-chain example.com
 ssl-checkup --retries 2 --retry-delay 1.0 example.com
 ssl-checkup --warn-days 30 --critical-days 7 example.com
 ssl-checkup --input targets.txt --json --summary
+ssl-checkup --json example.com --output report.json
 ```
 
 JSON schema (stable fields):
