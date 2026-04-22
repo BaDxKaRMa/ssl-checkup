@@ -1,4 +1,4 @@
-.PHONY: help sync test test-unit test-integration test-verbose test-coverage lint format clean build security check-all ci dev-setup pre-commit
+.PHONY: help sync test test-unit test-integration test-verbose test-coverage lint format clean build security check-all ci dev-setup pre-commit release-push
 
 help:  ## Show this help message
 	@echo "Available commands:"
@@ -64,3 +64,11 @@ pre-commit:  ## Run pre-commit checks
 	$(MAKE) format
 	$(MAKE) lint
 	$(MAKE) test
+
+release-push:  ## Create and push a version tag (usage: make release-push VERSION=1.2.1)
+	@if [ -z "$(VERSION)" ]; then echo "Usage: make release-push VERSION=x.y.z"; exit 1; fi
+	sed -i '' 's/^version = ".*"/version = "$(VERSION)"/' pyproject.toml
+	git add pyproject.toml
+	git commit -m "chore(release): bump version to $(VERSION)"
+	git tag v$(VERSION)
+	git push && git push --tags

@@ -8,7 +8,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Type
 
 from .exceptions import EXIT_OPERATIONAL_ERROR
@@ -197,8 +197,10 @@ class CheckEngine:
                 "Could not determine certificate expiration date (notAfter)"
             )
 
-        expire_date = datetime.strptime(not_after, "%b %d %H:%M:%S %Y %Z")
-        days_left = (expire_date - datetime.utcnow()).days
+        expire_date = datetime.strptime(not_after, "%b %d %H:%M:%S %Y %Z").replace(
+            tzinfo=timezone.utc
+        )
+        days_left = (expire_date - datetime.now(timezone.utc)).days
 
         warn_days = int(_arg(self.args, "warn_days", 30))
         critical_days = int(_arg(self.args, "critical_days", 7))
@@ -359,7 +361,7 @@ class CheckEngine:
             "san": parse_san(cert),
             "not_before": cert.get("notBefore"),
             "not_after": cert.get("notAfter"),
-            "checked_at": datetime.utcnow().isoformat() + "Z",
+            "checked_at": datetime.now(timezone.utc).isoformat() + "Z",
             "warning_days": _arg(self.args, "warn_days", 30),
             "critical_days": _arg(self.args, "critical_days", 7),
         }

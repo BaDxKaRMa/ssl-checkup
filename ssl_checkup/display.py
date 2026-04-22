@@ -3,7 +3,7 @@ from typing import Optional
 """Certificate display and pretty printing."""
 
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 
 from .formatting import OutputFormatter
@@ -49,9 +49,10 @@ def pretty_print_cert(
         return
 
     # Parse expiration and calculate status
-    expire_date = datetime.strptime(not_after, "%b %d %H:%M:%S %Y %Z")
-    now = datetime.utcnow()
-    days_left = (expire_date - now).days
+    expire_date = datetime.strptime(not_after, "%b %d %H:%M:%S %Y %Z").replace(
+        tzinfo=timezone.utc
+    )
+    days_left = (expire_date - datetime.now(timezone.utc)).days
 
     # Get certificate details
     issuer_val = get_issuer_org(cert) or "N/A"

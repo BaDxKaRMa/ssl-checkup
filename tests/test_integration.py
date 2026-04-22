@@ -620,7 +620,7 @@ class TestPackageIntegration:
         assert hasattr(parser, "parse_san")
         assert hasattr(display, "pretty_print_cert")
         assert hasattr(formatting, "OutputFormatter")
-        assert hasattr(exceptions, "handle_socket_error")
+        assert hasattr(exceptions, "handle_keyboard_interrupt")
 
     def test_entry_point_execution(self):
         """Test that the entry point works correctly."""

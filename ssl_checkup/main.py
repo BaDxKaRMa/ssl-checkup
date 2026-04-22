@@ -1,25 +1,15 @@
 """Main application CLI wiring and entry point."""
 
 import contextlib
-import json
 import sys
-import time  # noqa: F401
 from typing import Any
 
 from .cli import create_parser, handle_version_check, parse_website_arg, validate_args
 from .connection import get_certificate
 from .display import pretty_print_cert
-from .engine import CheckEngine, EngineDeps, colorize_pretty_json, print_single_field
+from .engine import CheckEngine, EngineDeps, _arg, print_single_field
 from .exceptions import handle_keyboard_interrupt
 from .formatting import DebugFormatter, colored
-
-
-def _arg(args: Any, name: str, default: Any) -> Any:
-    """Read argparse values safely, including mocked test objects."""
-    try:
-        return vars(args).get(name, default)
-    except TypeError:
-        return getattr(args, name, default)
 
 
 def _iter_input_targets(input_path: str) -> list[str]:
@@ -56,24 +46,6 @@ def _collect_targets(args: Any) -> tuple[list[tuple[str, int, str]], str | None]
         targets.append((hostname, port, raw_target))
 
     return targets, input_path
-
-
-def _colorize_pretty_json(text: str) -> str:
-    """Apply syntax highlighting to pretty JSON output."""
-    return colorize_pretty_json(text, colored)
-
-
-def _print_json(data: Any, pretty: bool, color_output: bool) -> None:
-    """Print JSON payload with optional pretty formatting and colors."""
-    if pretty:
-        pretty_json = json.dumps(data, indent=2, sort_keys=True, default=str)
-        stdout_is_tty = bool(getattr(sys.stdout, "isatty", lambda: False)())
-        if color_output and stdout_is_tty:
-            print(_colorize_pretty_json(pretty_json))
-        else:
-            print(pretty_json)
-    else:
-        print(json.dumps(data, separators=(",", ":"), default=str))
 
 
 def _build_deps() -> EngineDeps:
