@@ -31,10 +31,10 @@ color = [
     "termcolor>=3.1.0",
 ]
 crypto = [
-    "cryptography>=46.0.7",
+    "cryptography>=48.0.1",
 ]
 full = [
-    "cryptography>=46.0.7",
+    "cryptography>=48.0.1",
     "termcolor>=3.1.0",
 ]
 test = [
